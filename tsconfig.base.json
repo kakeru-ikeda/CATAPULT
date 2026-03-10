@@ -14,5 +14,6 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true
-  }
+  },
+  "exclude": ["packages/frontend/**", "node_modules/**", "**/dist/**"]
 }

@@ -6,6 +6,8 @@ import type { Router, Request, Response } from "express";
 import { Router as createRouter } from "express";
 import Redis from "ioredis";
 
+import { authMiddleware, issueJwt } from "../middleware/auth.js";
+
 const prisma = new PrismaClient();
 const redis = new Redis(process.env["REDIS_URL"]!);
 const slackClient = new WebClient(process.env["SLACK_BOT_TOKEN"]);
@@ -61,11 +63,12 @@ interface GitHubUser {
 }
 
 interface OAuthStateData {
-  platform: "slack" | "discord";
+  platform: "slack" | "discord" | "web";
   slackUserId?: string;
   discordUserId?: string;
   channelId?: string;
   threadTs?: string;
+  redirectUrl?: string;
 }
 
 async function exchangeCodeForTokens(code: string): Promise<{
@@ -120,18 +123,39 @@ void decrypt; // 参照を保持（将来のリフレッシュ処理で使用）
 
 const router: Router = createRouter();
 
-// GitHub OAuth 開始エンドポイント: state の検証後 GitHub 認可ページへリダイレクト
-router.get("/github", (_req: Request, res: Response) => {
-  const { state, platform } = _req.query;
-
-  if (!state || typeof state !== "string") {
-    res.status(400).send("Missing state parameter");
-    return;
-  }
+// GitHub OAuth 開始エンドポイント（Slack/Discord フロー）: state で検証後 GitHub 認可ページへリダイレクト
+router.get("/github", async (_req: Request, res: Response) => {
+  const { state, platform, redirect } = _req.query;
 
   const clientId = process.env["GITHUB_APP_CLIENT_ID"];
   if (!clientId) {
     res.status(500).send("GitHub App is not configured");
+    return;
+  }
+
+  // Web 管理画面からの OAuth: redirect クエリパラメータで判別
+  if (redirect && typeof redirect === "string") {
+    const webState = randomBytes(16).toString("hex");
+    const stateData: OAuthStateData = {
+      platform: "web",
+      redirectUrl: redirect,
+    };
+    await redis.set(`oauth:state:${webState}`, JSON.stringify(stateData), "EX", 600);
+
+    const scopes = "read:user,user:email";
+    const redirectUri = `${process.env["APP_URL"] ?? ""}/api/auth/github/callback`;
+    const githubAuthUrl =
+      `https://github.com/login/oauth/authorize` +
+      `?client_id=${encodeURIComponent(clientId)}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&state=${encodeURIComponent(webState)}` +
+      `&scope=${encodeURIComponent(scopes)}`;
+    res.redirect(githubAuthUrl);
+    return;
+  }
+
+  if (!state || typeof state !== "string") {
+    res.status(400).send("Missing state parameter");
     return;
   }
 
@@ -252,6 +276,20 @@ router.get("/github/callback", async (req: Request, res: Response) => {
       });
     }
 
+    // Web 管理画面フロー: JWT を発行してフロントエンドへリダイレクト
+    if (stateData.platform === "web" && stateData.redirectUrl) {
+      const token = issueJwt({
+        id: user.id,
+        role: user.role as "ADMIN" | "USER",
+        githubUsername: user.githubUsername,
+      });
+      const redirectUrl = new URL("/auth/callback", stateData.redirectUrl);
+      redirectUrl.searchParams.set("token", token);
+      redirectUrl.searchParams.set("role", user.role);
+      res.redirect(redirectUrl.toString());
+      return;
+    }
+
     res.redirect(`${process.env["APP_URL"] ?? ""}/auth/success`);
   } catch (err) {
     console.error("OAuth callback error:", err);
@@ -266,6 +304,33 @@ router.post("/skip-pending", async (req: Request, res: Response) => {
     await redis.del(`pending:task:${slackUserId}`);
   }
   res.json({ ok: true });
+});
+
+// 現在のユーザー情報取得 GET /api/auth/me
+router.get("/me", authMiddleware, async (req: Request, res: Response) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.user!.id },
+    select: {
+      id: true,
+      githubUsername: true,
+      githubAvatarUrl: true,
+      role: true,
+    },
+  });
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  res.json(user);
+});
+
+// アカウント連携一覧 GET /api/auth/me/links
+router.get("/me/links", authMiddleware, async (req: Request, res: Response) => {
+  const links = await prisma.accountLink.findMany({
+    where: { userId: req.user!.id },
+    select: { platform: true, platformUserId: true },
+  });
+  res.json(links);
 });
 
 export { router as authRouter };

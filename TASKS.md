@@ -90,28 +90,28 @@
 
 ## Phase 5: ReactAdmin 管理画面
 
-- [ ] ReactAdmin v5 セットアップ
-- [ ] dataProvider (REST API)
-- [ ] authProvider (JWT + GitHub OAuth)
-- [ ] ロールベース UI 分岐 (permissions で ADMIN/USER)
-- [ ] 管理者モード: UserList
-- [ ] 管理者モード: UserEdit (ロール変更)
-- [ ] 管理者モード: JobList (全ユーザーのジョブ)
-- [ ] 管理者モード: JobShow
-- [ ] 管理者モード: McpToolConfig (グローバルツール管理)
-- [ ] 管理者モード: SystemSettings
-- [ ] 利用者モード: Dashboard
-- [ ] 利用者モード: MyJobs (自分のジョブ一覧)
-- [ ] 利用者モード: MyInstructions (インストラクション管理)
-- [ ] 利用者モード: AccountLink (アカウント連携)
-- [ ] 利用者モード: McpToolSettings (個人MCPツール設定)
-- [ ] JobStatusBadge コンポーネント
-- [ ] LogViewer コンポーネント
-  - [ ] 既存ログの取得
-  - [ ] 実行中ジョブの SSE リアルタイム購読
-  - [ ] モノスペースフォントのターミナル風表示
-  - [ ] LIVE バッジ + LinearProgress
-- [ ] SSE エンドポイント (/api/jobs/:jobId/stream)
+- [x] ReactAdmin v5 セットアップ
+- [x] dataProvider (REST API)
+- [x] authProvider (JWT + GitHub OAuth)
+- [x] ロールベース UI 分岐 (permissions で ADMIN/USER)
+- [x] 管理者モード: UserList
+- [x] 管理者モード: UserEdit (ロール変更)
+- [x] 管理者モード: JobList (全ユーザーのジョブ)
+- [x] 管理者モード: JobShow
+- [x] 管理者モード: McpToolConfig (グローバルツール管理)
+- [x] 管理者モード: SystemSettings
+- [x] 利用者モード: Dashboard
+- [x] 利用者モード: MyJobs (自分のジョブ一覧)
+- [x] 利用者モード: MyInstructions (インストラクション管理)
+- [x] 利用者モード: AccountLink (アカウント連携)
+- [x] 利用者モード: McpToolSettings (個人MCPツール設定)
+- [x] JobStatusBadge コンポーネント
+- [x] LogViewer コンポーネント
+  - [x] 既存ログの取得
+  - [x] 実行中ジョブの SSE リアルタイム購読
+  - [x] モノスペースフォントのターミナル風表示
+  - [x] LIVE バッジ + LinearProgress
+- [x] SSE エンドポイント (/api/jobs/:jobId/stream)
 
 ## Phase 6: MCPツール設定・インストラクション管理
 
