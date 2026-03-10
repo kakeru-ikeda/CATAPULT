@@ -74,19 +74,19 @@
 
 ## Phase 4: Discord Bot 実装
 
-- [ ] Discord.js セットアップ
-- [ ] メンション検知 (messageCreate イベント)
-- [ ] 未連携ユーザー認証誘導
-  - [ ] DM にボタン表示
-  - [ ] DM ブロック時のチャンネルフォールバック
-  - [ ] pendingTask を Redis に一時保存
+- [x] Discord.js セットアップ
+- [x] メンション検知 (messageCreate イベント)
+- [x] 未連携ユーザー認証誘導
+  - [x] DM にボタン表示
+  - [x] DM ブロック時のチャンネルフォールバック
+  - [x] pendingTask を Redis に一時保存
 - [ ] OAuth コールバック処理 (Discord 版)
-- [ ] StringSelectMenu リポジトリ選択 (最大25件)
-- [ ] ブランチ選択
-- [ ] 確認 → 実行
-- [ ] MessageComponentCollector (タイムアウト: 2分)
-- [ ] JobStreamRelay (Redis Pub/Sub → スレッド投稿)
-- [ ] ストリーミング投稿 (2000文字チャンク分割)
+- [x] StringSelectMenu リポジトリ選択 (最大25件)
+- [x] ブランチ選択
+- [x] 確認 → 実行
+- [x] MessageComponentCollector (タイムアウト: 2分)
+- [x] JobStreamRelay (Redis Pub/Sub → スレッド投稿)
+- [x] ストリーミング投稿 (2000文字チャンク分割)
 
 ## Phase 5: ReactAdmin 管理画面
 

@@ -1,6 +1,8 @@
+import { registerDiscordHandlers } from "./handlers/discord-mention.js";
 import { registerInteractiveHandlers } from "./handlers/interactive.js";
 import { handleMention } from "./handlers/mention.js";
 import { registerOptionsHandlers } from "./handlers/options.js";
+import { startDiscord } from "./platforms/discord.js";
 import { slackApp } from "./platforms/slack.js";
 
 // app_mention イベント: メンション検知
@@ -14,8 +16,13 @@ registerOptionsHandlers(slackApp);
 // インタラクティブコンポーネント登録
 registerInteractiveHandlers(slackApp);
 
-// Slack アプリ起動
+// Discord ハンドラー登録
+registerDiscordHandlers();
+
+// Slack & Discord アプリ起動
 void (async () => {
   await slackApp.start();
   console.info("⚡️ CATAPULT Slack Bot is running (Socket Mode)");
+  await startDiscord();
+  console.info("🤖 CATAPULT Discord Bot is running");
 })();
