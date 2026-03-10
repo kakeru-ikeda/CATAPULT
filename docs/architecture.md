@@ -161,14 +161,14 @@ copilot-dev-server/
 
 ## Docker Compose 構成
 
-| サービス   | 説明                                     | ポート     |
-| ---------- | ---------------------------------------- | ---------- |
-| `postgres` | PostgreSQL 16                            | 5432       |
-| `redis`    | Redis 7                                  | 6379       |
-| `api`      | Express/Fastify API Server               | 3000       |
-| `bot`      | Slack/Discord Bot Gateway                | 3001       |
-| `worker`   | Copilot CLI Worker (replicas: 2)         | -          |
-| `frontend` | ReactAdmin (Nginx)                       | 80 / 443   |
+| サービス   | 説明                             | ポート   |
+| ---------- | -------------------------------- | -------- |
+| `postgres` | PostgreSQL 16                    | 5432     |
+| `redis`    | Redis 7                          | 6379     |
+| `api`      | Express/Fastify API Server       | 3000     |
+| `bot`      | Slack/Discord Bot Gateway        | 3001     |
+| `worker`   | Copilot CLI Worker (replicas: 2) | -        |
+| `frontend` | ReactAdmin (Nginx)               | 80 / 443 |
 
 ## Worker の Dockerfile
 

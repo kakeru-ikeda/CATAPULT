@@ -96,10 +96,10 @@ export default router;
 
 MCPツールは2階層で管理します:
 
-| 種別        | `isGlobal` | `ownerId` | 管理者    | 利用者    |
-| ----------- | ---------- | --------- | --------- | --------- |
-| グローバル  | `true`     | `null`    | CRUD 可   | 読み取り可 |
-| 個人        | `false`    | User ID   | -         | CRUD 可   |
+| 種別       | `isGlobal` | `ownerId` | 管理者  | 利用者     |
+| ---------- | ---------- | --------- | ------- | ---------- |
+| グローバル | `true`     | `null`    | CRUD 可 | 読み取り可 |
+| 個人       | `false`    | User ID   | -       | CRUD 可    |
 
 ### 3. MCP設定ファイルの Worker 注入
 

@@ -61,10 +61,10 @@ export async function validateActionOwner(
 // services/job-guard.ts
 
 const JOB_GUARD_CONFIG = {
-  maxConcurrentPerUser: 3,   // ユーザーあたりの最大同時実行数
-  maxConcurrentPerRepo: 2,   // リポジトリあたりの最大同時実行数
-  maxDailyPerUser: 50,       // 1日あたりの最大ジョブ数
-  cooldownMs: 10_000,        // 連続投入のクールダウン（10秒）
+  maxConcurrentPerUser: 3, // ユーザーあたりの最大同時実行数
+  maxConcurrentPerRepo: 2, // リポジトリあたりの最大同時実行数
+  maxDailyPerUser: 50, // 1日あたりの最大ジョブ数
+  cooldownMs: 10_000, // 連続投入のクールダウン（10秒）
 };
 
 export class JobGuard {
@@ -96,7 +96,9 @@ export class JobGuard {
       where: { userId, createdAt: { gte: today } },
     });
     if (dailyCount >= JOB_GUARD_CONFIG.maxDailyPerUser) {
-      throw new JobLimitError(`1日あたりのジョブ上限 (${JOB_GUARD_CONFIG.maxDailyPerUser}) に達しました。`);
+      throw new JobLimitError(
+        `1日あたりのジョブ上限 (${JOB_GUARD_CONFIG.maxDailyPerUser}) に達しました。`,
+      );
     }
 
     // クールダウンチェック（Redis で最終投入時刻を管理）
@@ -187,10 +189,7 @@ export function createWorkDir(jobId: string): string {
 
 // git clone はディレクトリ名問題を排除するため末尾に . を付ける
 async function cloneRepository(repoUrl: string, branch: string, workDir: string): Promise<void> {
-  await execAsync(
-    `git clone --depth=1 --branch=${branch} ${repoUrl} .`,
-    { cwd: workDir },
-  );
+  await execAsync(`git clone --depth=1 --branch=${branch} ${repoUrl} .`, { cwd: workDir });
 }
 
 // 完了後のクリーンアップ
@@ -241,6 +240,7 @@ Copilot CLI に注入するインストラクションで、ブランチ名に�
 JobGuard の `maxConcurrentPerRepo: 2` で、同一リポジトリに対する同時実行数を制限します。
 
 これにより:
+
 - ブランチ名の衝突を最小化
 - リポジトリへの過剰な同時アクセスを防止
 
@@ -309,11 +309,11 @@ async function pollForFreshToken(userId: string, maxWaitMs: number): Promise<str
 
 ## まとめ
 
-| 問題                         | 対策                                     |
-| ---------------------------- | ---------------------------------------- |
-| Slack ボタン操作権限          | ボタン値に起票者 ID を含めてミドルウェアで検証 |
-| 重複ジョブ投入                | JobGuard（同時実行数・日次上限・クールダウン） |
-| キュー溢れ                    | キュー位置と推定待ち時間を通知              |
-| 作業ディレクトリ衝突          | ジョブ ID 単位の完全分離ディレクトリ        |
-| git コンフリクト              | ブランチ名にジョブ ID 含める + maxConcurrentPerRepo: 2 |
-| トークンリフレッシュ競合      | Redis 分散ロック + ダブルチェック + ポーリング |
+| 問題                     | 対策                                                   |
+| ------------------------ | ------------------------------------------------------ |
+| Slack ボタン操作権限     | ボタン値に起票者 ID を含めてミドルウェアで検証         |
+| 重複ジョブ投入           | JobGuard（同時実行数・日次上限・クールダウン）         |
+| キュー溢れ               | キュー位置と推定待ち時間を通知                         |
+| 作業ディレクトリ衝突     | ジョブ ID 単位の完全分離ディレクトリ                   |
+| git コンフリクト         | ブランチ名にジョブ ID 含める + maxConcurrentPerRepo: 2 |
+| トークンリフレッシュ競合 | Redis 分散ロック + ダブルチェック + ポーリング         |

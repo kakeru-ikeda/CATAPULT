@@ -8,14 +8,14 @@ CATAPULT は GitHub App の OAuth フローを使用します。PAT（Personal A
 
 ### 必要な権限（Permissions）
 
-| 権限                | レベル     | 説明                             |
-| ------------------- | ---------- | -------------------------------- |
-| `Contents`          | Read/Write | リポジトリのコード読み書き       |
-| `Pull requests`     | Read/Write | PR の作成・更新                  |
-| `Issues`            | Read/Write | Issue の読み書き                 |
-| `Metadata`          | Read       | リポジトリ一覧取得               |
-| `Copilot Requests`  | -          | Copilot CLI の実行権限           |
-| `Email addresses`   | Read       | ユーザーのメールアドレス取得     |
+| 権限               | レベル     | 説明                         |
+| ------------------ | ---------- | ---------------------------- |
+| `Contents`         | Read/Write | リポジトリのコード読み書き   |
+| `Pull requests`    | Read/Write | PR の作成・更新              |
+| `Issues`           | Read/Write | Issue の読み書き             |
+| `Metadata`         | Read       | リポジトリ一覧取得           |
+| `Copilot Requests` | -          | Copilot CLI の実行権限       |
+| `Email addresses`  | Read       | ユーザーのメールアドレス取得 |
 
 ### 設定項目
 
@@ -62,10 +62,10 @@ CATAPULT は GitHub App の OAuth フローを使用します。PAT（Personal A
 
 ### トークンの種類
 
-| トークン種別     | 有効期限  | 用途                            |
-| ---------------- | --------- | ------------------------------- |
-| アクセストークン | 8時間     | GitHub API / Copilot CLI 実行   |
-| リフレッシュトークン | 約6ヶ月 | アクセストークンの再取得        |
+| トークン種別         | 有効期限 | 用途                          |
+| -------------------- | -------- | ----------------------------- |
+| アクセストークン     | 8時間    | GitHub API / Copilot CLI 実行 |
+| リフレッシュトークン | 約6ヶ月  | アクセストークンの再取得      |
 
 ### 自動リフレッシュフロー
 

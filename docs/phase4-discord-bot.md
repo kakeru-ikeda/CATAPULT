@@ -50,9 +50,7 @@ discordClient.on("messageCreate", async (message) => {
   if (!message.mentions.has(discordClient.user!)) return;
 
   const discordUserId = message.author.id;
-  const text = message.content
-    .replace(/<@!?\d+>/g, "")
-    .trim();
+  const text = message.content.replace(/<@!?\d+>/g, "").trim();
 
   // アカウント連携確認
   const accountLink = await prisma.accountLink.findUnique({
@@ -105,10 +103,7 @@ async function handleUnauthenticatedDiscordUser(
 
   const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = await import("discord.js");
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setLabel("GitHub で連携する 🔗")
-      .setStyle(ButtonStyle.Link)
-      .setURL(authUrl),
+    new ButtonBuilder().setLabel("GitHub で連携する 🔗").setStyle(ButtonStyle.Link).setURL(authUrl),
   );
 
   // DM を試みる（ブロックされている場合はチャンネルに投稿）
@@ -141,11 +136,7 @@ import {
   ActionRowBuilder,
 } from "discord.js";
 
-async function showRepoSelect(
-  user: User,
-  prompt: string,
-  message: Message,
-): Promise<void> {
+async function showRepoSelect(user: User, prompt: string, message: Message): Promise<void> {
   const repos = await githubRepos.listInstallationRepos(user.id, "");
   const top25 = repos.slice(0, 25); // Discord の制限
 
@@ -206,9 +197,9 @@ async function showBranchSelect(
     .setCustomId(`branch_select:${message.id}`)
     .setPlaceholder("ブランチを選択...")
     .addOptions(
-      branches.slice(0, 25).map((b) =>
-        new StringSelectMenuOptionBuilder().setLabel(b.name).setValue(b.name),
-      ),
+      branches
+        .slice(0, 25)
+        .map((b) => new StringSelectMenuOptionBuilder().setLabel(b.name).setValue(b.name)),
     );
 
   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
@@ -266,11 +257,7 @@ export function splitIntoChunks(text: string, maxLength = 1900): string[] {
 }
 
 // Discord スレッドへの投稿
-async function postToThread(
-  channel: TextChannel,
-  threadId: string,
-  text: string,
-): Promise<void> {
+async function postToThread(channel: TextChannel, threadId: string, text: string): Promise<void> {
   const thread = await channel.threads.fetch(threadId);
   if (!thread) return;
 

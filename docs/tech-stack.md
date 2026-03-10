@@ -2,35 +2,35 @@
 
 ## 技術スタック
 
-| カテゴリ         | 技術・バージョン                              |
-| ---------------- | --------------------------------------------- |
-| 言語             | TypeScript (strict)                           |
-| ランタイム       | Node.js 22                                    |
-| モノレポ         | npm workspaces                                |
-| コンテナ         | Docker Compose                                |
-| DB               | PostgreSQL 16 + Prisma                        |
-| キュー           | Redis 7 + BullMQ                              |
-| Bot (Slack)      | Slack Bolt SDK                                |
-| Bot (Discord)    | Discord.js                                    |
-| 管理画面         | ReactAdmin v5                                 |
-| 認証             | GitHub App OAuth                              |
-| CLI              | GitHub Copilot CLI (GA 2026-02-25)            |
-| Linter           | ESLint v9 (Flat Config) + typescript-eslint   |
-| Formatter        | Prettier                                      |
-| Git Hook         | husky + lint-staged                           |
-| CI               | GitHub Actions                                |
+| カテゴリ      | 技術・バージョン                            |
+| ------------- | ------------------------------------------- |
+| 言語          | TypeScript (strict)                         |
+| ランタイム    | Node.js 22                                  |
+| モノレポ      | npm workspaces                              |
+| コンテナ      | Docker Compose                              |
+| DB            | PostgreSQL 16 + Prisma                      |
+| キュー        | Redis 7 + BullMQ                            |
+| Bot (Slack)   | Slack Bolt SDK                              |
+| Bot (Discord) | Discord.js                                  |
+| 管理画面      | ReactAdmin v5                               |
+| 認証          | GitHub App OAuth                            |
+| CLI           | GitHub Copilot CLI (GA 2026-02-25)          |
+| Linter        | ESLint v9 (Flat Config) + typescript-eslint |
+| Formatter     | Prettier                                    |
+| Git Hook      | husky + lint-staged                         |
+| CI            | GitHub Actions                              |
 
 ## Linter 設定 (ESLint v9 Flat Config)
 
 ### 使用プラグイン
 
-| プラグイン                     | 用途                                    |
-| ------------------------------ | --------------------------------------- |
-| `typescript-eslint`            | TypeScript 型チェック付きルール         |
-| `eslint-plugin-import`         | import 順序の統一                       |
-| `eslint-plugin-react`          | React コンポーネントルール（frontend のみ） |
-| `eslint-plugin-react-hooks`    | React Hooks ルール（frontend のみ）     |
-| `eslint-config-prettier`       | Prettier との競合ルールを無効化         |
+| プラグイン                  | 用途                                        |
+| --------------------------- | ------------------------------------------- |
+| `typescript-eslint`         | TypeScript 型チェック付きルール             |
+| `eslint-plugin-import`      | import 順序の統一                           |
+| `eslint-plugin-react`       | React コンポーネントルール（frontend のみ） |
+| `eslint-plugin-react-hooks` | React Hooks ルール（frontend のみ）         |
+| `eslint-config-prettier`    | Prettier との競合ルールを無効化             |
 
 ### `eslint.config.mjs`
 
@@ -184,13 +184,8 @@ npx lint-staged
 ```json
 {
   "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{js,mjs,cjs,json,md,yml,yaml}": [
-      "prettier --write"
-    ]
+    "*.{ts,tsx}": ["eslint --fix", "prettier --write"],
+    "*.{js,mjs,cjs,json,md,yml,yaml}": ["prettier --write"]
   }
 }
 ```
@@ -261,9 +256,7 @@ jobs:
 {
   "name": "catapult",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "workspaces": ["packages/*"],
   "engines": {
     "node": ">=22.0.0"
   }
@@ -272,12 +265,12 @@ jobs:
 
 各パッケージは `packages/` 配下に配置し、独自の `package.json` を持ちます。
 
-| パッケージ           | 説明                              |
-| -------------------- | --------------------------------- |
-| `packages/api`       | Express/Fastify API Server        |
-| `packages/bot`       | Slack/Discord Bot Gateway         |
-| `packages/worker`    | Copilot CLI Worker                |
-| `packages/frontend`  | ReactAdmin 管理画面               |
+| パッケージ          | 説明                       |
+| ------------------- | -------------------------- |
+| `packages/api`      | Express/Fastify API Server |
+| `packages/bot`      | Slack/Discord Bot Gateway  |
+| `packages/worker`   | Copilot CLI Worker         |
+| `packages/frontend` | ReactAdmin 管理画面        |
 
 ## テストフレームワーク (Vitest)
 
@@ -292,5 +285,6 @@ jobs:
 ```
 
 テストファイルの命名規則:
+
 - `*.test.ts` - 単体テスト
 - `*.spec.ts` - 統合テスト / E2E テスト

@@ -211,10 +211,12 @@ describe("POST /api/jobs", () => {
 ## セットアップ
 
 ### 前提条件
+
 - Node.js 22+
 - Docker Compose
 
 ### インストール
+
 1. `git clone https://github.com/your-org/catapult`
 2. `cp .env.example .env`（各環境変数を設定）
 3. `npm install`
@@ -223,6 +225,7 @@ describe("POST /api/jobs", () => {
 6. `docker compose up`
 
 ### GitHub App の設定
+
 1. GitHub で新しい App を作成
 2. 必要な権限を設定（docs/authentication.md 参照）
 3. Client ID / Client Secret を .env に設定
@@ -233,22 +236,22 @@ describe("POST /api/jobs", () => {
 
 `.env.example` の各変数の説明を記載したドキュメント:
 
-| 変数名                    | 説明                                         | 必須 |
-| ------------------------- | -------------------------------------------- | ---- |
-| `DATABASE_URL`            | PostgreSQL 接続 URL                          | ✅   |
-| `REDIS_URL`               | Redis 接続 URL                               | ✅   |
-| `GITHUB_APP_ID`           | GitHub App の App ID                         | ✅   |
-| `GITHUB_APP_PRIVATE_KEY`  | GitHub App の秘密鍵（PEM 形式）              | ✅   |
-| `GITHUB_CLIENT_ID`        | GitHub App の Client ID                      | ✅   |
-| `GITHUB_CLIENT_SECRET`    | GitHub App の Client Secret                  | ✅   |
-| `TOKEN_ENCRYPTION_KEY`    | トークン暗号化マスターキー（64 hex chars）   | ✅   |
-| `SLACK_BOT_TOKEN`         | Slack Bot Token (`xoxb-` で始まる)           | △   |
-| `SLACK_SIGNING_SECRET`    | Slack Signing Secret                         | △   |
-| `SLACK_APP_TOKEN`         | Slack App Token (`xapp-` で始まる)           | △   |
-| `DISCORD_BOT_TOKEN`       | Discord Bot Token                            | △   |
-| `JWT_SECRET`              | JWT 署名シークレット                         | ✅   |
-| `API_BASE_URL`            | API サーバーの公開 URL                       | ✅   |
-| `VITE_API_URL`            | フロントエンドから API への URL              | ✅   |
+| 変数名                   | 説明                                       | 必須 |
+| ------------------------ | ------------------------------------------ | ---- |
+| `DATABASE_URL`           | PostgreSQL 接続 URL                        | ✅   |
+| `REDIS_URL`              | Redis 接続 URL                             | ✅   |
+| `GITHUB_APP_ID`          | GitHub App の App ID                       | ✅   |
+| `GITHUB_APP_PRIVATE_KEY` | GitHub App の秘密鍵（PEM 形式）            | ✅   |
+| `GITHUB_CLIENT_ID`       | GitHub App の Client ID                    | ✅   |
+| `GITHUB_CLIENT_SECRET`   | GitHub App の Client Secret                | ✅   |
+| `TOKEN_ENCRYPTION_KEY`   | トークン暗号化マスターキー（64 hex chars） | ✅   |
+| `SLACK_BOT_TOKEN`        | Slack Bot Token (`xoxb-` で始まる)         | △    |
+| `SLACK_SIGNING_SECRET`   | Slack Signing Secret                       | △    |
+| `SLACK_APP_TOKEN`        | Slack App Token (`xapp-` で始まる)         | △    |
+| `DISCORD_BOT_TOKEN`      | Discord Bot Token                          | △    |
+| `JWT_SECRET`             | JWT 署名シークレット                       | ✅   |
+| `API_BASE_URL`           | API サーバーの公開 URL                     | ✅   |
+| `VITE_API_URL`           | フロントエンドから API への URL            | ✅   |
 
 △: Slack または Discord のいずれか1つは必須
 
@@ -256,26 +259,26 @@ describe("POST /api/jobs", () => {
 
 主要なエンドポイントを記載:
 
-| メソッド | パス                        | 説明                          | 認証    |
-| -------- | --------------------------- | ----------------------------- | ------- |
-| GET      | `/api/auth/github`          | GitHub OAuth 開始             | 不要    |
-| GET      | `/api/auth/github/callback` | GitHub OAuth コールバック     | 不要    |
-| GET      | `/api/auth/me`              | ログインユーザー情報取得      | JWT     |
-| POST     | `/api/jobs`                 | ジョブ作成                    | JWT     |
-| GET      | `/api/jobs`                 | ジョブ一覧（自分のみ）        | JWT     |
-| GET      | `/api/jobs/:id`             | ジョブ詳細                    | JWT     |
-| DELETE   | `/api/jobs/:id`             | ジョブキャンセル              | JWT     |
-| GET      | `/api/jobs/:id/stream`      | ジョブログ SSE ストリーム     | JWT     |
-| GET      | `/api/repos`                | リポジトリ一覧取得            | JWT     |
-| GET      | `/api/repos/:repo/branches` | ブランチ一覧取得              | JWT     |
-| GET      | `/api/mcp-tools`            | MCPツール一覧                 | JWT     |
-| POST     | `/api/mcp-tools`            | MCPツール作成                 | JWT     |
-| PUT      | `/api/mcp-tools/:id`        | MCPツール更新                 | JWT     |
-| DELETE   | `/api/mcp-tools/:id`        | MCPツール削除                 | JWT     |
-| GET      | `/api/instructions`         | インストラクション一覧        | JWT     |
-| POST     | `/api/instructions`         | インストラクション作成        | JWT     |
-| PUT      | `/api/instructions/:id`     | インストラクション更新        | JWT     |
-| DELETE   | `/api/instructions/:id`     | インストラクション削除        | JWT     |
+| メソッド | パス                        | 説明                      | 認証 |
+| -------- | --------------------------- | ------------------------- | ---- |
+| GET      | `/api/auth/github`          | GitHub OAuth 開始         | 不要 |
+| GET      | `/api/auth/github/callback` | GitHub OAuth コールバック | 不要 |
+| GET      | `/api/auth/me`              | ログインユーザー情報取得  | JWT  |
+| POST     | `/api/jobs`                 | ジョブ作成                | JWT  |
+| GET      | `/api/jobs`                 | ジョブ一覧（自分のみ）    | JWT  |
+| GET      | `/api/jobs/:id`             | ジョブ詳細                | JWT  |
+| DELETE   | `/api/jobs/:id`             | ジョブキャンセル          | JWT  |
+| GET      | `/api/jobs/:id/stream`      | ジョブログ SSE ストリーム | JWT  |
+| GET      | `/api/repos`                | リポジトリ一覧取得        | JWT  |
+| GET      | `/api/repos/:repo/branches` | ブランチ一覧取得          | JWT  |
+| GET      | `/api/mcp-tools`            | MCPツール一覧             | JWT  |
+| POST     | `/api/mcp-tools`            | MCPツール作成             | JWT  |
+| PUT      | `/api/mcp-tools/:id`        | MCPツール更新             | JWT  |
+| DELETE   | `/api/mcp-tools/:id`        | MCPツール削除             | JWT  |
+| GET      | `/api/instructions`         | インストラクション一覧    | JWT  |
+| POST     | `/api/instructions`         | インストラクション作成    | JWT  |
+| PUT      | `/api/instructions/:id`     | インストラクション更新    | JWT  |
+| DELETE   | `/api/instructions/:id`     | インストラクション削除    | JWT  |
 
 ## 成果物
 

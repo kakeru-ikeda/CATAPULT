@@ -132,8 +132,12 @@ router.get("/github/callback", async (req, res) => {
   const githubUser = await fetchGithubUser(tokens.token);
 
   // DB に保存
-  const user = await prisma.user.upsert({ /* ... */ });
-  await prisma.accountLink.upsert({ /* ... */ });
+  const user = await prisma.user.upsert({
+    /* ... */
+  });
+  await prisma.accountLink.upsert({
+    /* ... */
+  });
 
   // Slack DM で完了通知
   const pendingTask = await redis.get(`pending:task:${slackUserId}`);
@@ -263,7 +267,9 @@ slackApp.action("select_repo", async ({ action, body, client, ack }) => {
 
 ```typescript
 // ジョブ DB 登録
-const job = await prisma.job.create({ /* ... */ });
+const job = await prisma.job.create({
+  /* ... */
+});
 
 // BullMQ にキュー投入
 await jobQueue.add("execute", { jobId: job.id });

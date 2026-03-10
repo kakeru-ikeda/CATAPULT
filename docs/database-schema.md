@@ -148,28 +148,28 @@ model Instruction {
 
 ユーザー情報と GitHub トークンを管理します。
 
-| カラム                  | 型        | 説明                                       |
-| ----------------------- | --------- | ------------------------------------------ |
-| `id`                    | String    | CUID 形式の主キー                          |
-| `githubUsername`        | String    | GitHub ユーザー名（ユニーク）              |
-| `githubAvatarUrl`       | String?   | GitHub アバター URL                        |
-| `githubToken`           | String    | アクセストークン（AES-256-GCM 暗号化済み） |
+| カラム                  | 型        | 説明                                           |
+| ----------------------- | --------- | ---------------------------------------------- |
+| `id`                    | String    | CUID 形式の主キー                              |
+| `githubUsername`        | String    | GitHub ユーザー名（ユニーク）                  |
+| `githubAvatarUrl`       | String?   | GitHub アバター URL                            |
+| `githubToken`           | String    | アクセストークン（AES-256-GCM 暗号化済み）     |
 | `refreshToken`          | String?   | リフレッシュトークン（AES-256-GCM 暗号化済み） |
-| `tokenExpiresAt`        | DateTime? | アクセストークン有効期限                   |
-| `refreshTokenExpiresAt` | DateTime? | リフレッシュトークン有効期限              |
-| `role`                  | Role      | ADMIN / USER                               |
+| `tokenExpiresAt`        | DateTime? | アクセストークン有効期限                       |
+| `refreshTokenExpiresAt` | DateTime? | リフレッシュトークン有効期限                   |
+| `role`                  | Role      | ADMIN / USER                                   |
 
 ### AccountLink
 
 Slack/Discord アカウントと GitHub アカウントの紐付けを管理します。
 
-| カラム            | 型       | 説明                                |
-| ----------------- | -------- | ----------------------------------- |
-| `id`              | String   | CUID 形式の主キー                   |
-| `userId`          | String   | User の外部キー                     |
-| `platform`        | Platform | SLACK / DISCORD                     |
-| `platformUserId`  | String   | Slack/Discord のユーザー ID         |
-| `platformTeamId`  | String?  | Slack ワークスペース ID / Discord サーバー ID |
+| カラム           | 型       | 説明                                          |
+| ---------------- | -------- | --------------------------------------------- |
+| `id`             | String   | CUID 形式の主キー                             |
+| `userId`         | String   | User の外部キー                               |
+| `platform`       | Platform | SLACK / DISCORD                               |
+| `platformUserId` | String   | Slack/Discord のユーザー ID                   |
+| `platformTeamId` | String?  | Slack ワークスペース ID / Discord サーバー ID |
 
 ユニーク制約: `[platform, platformUserId]`
 
@@ -177,63 +177,63 @@ Slack/Discord アカウントと GitHub アカウントの紐付けを管理し�
 
 Copilot CLI の実行ジョブを管理します。
 
-| カラム          | 型        | 説明                               |
-| --------------- | --------- | ---------------------------------- |
-| `id`            | String    | CUID 形式の主キー                  |
-| `userId`        | String    | User の外部キー                    |
-| `repository`    | String    | "owner/repo" 形式のリポジトリ      |
-| `branch`        | String    | 対象ブランチ名                     |
-| `prompt`        | String    | タスクの指示内容                   |
+| カラム          | 型        | 説明                                       |
+| --------------- | --------- | ------------------------------------------ |
+| `id`            | String    | CUID 形式の主キー                          |
+| `userId`        | String    | User の外部キー                            |
+| `repository`    | String    | "owner/repo" 形式のリポジトリ              |
+| `branch`        | String    | 対象ブランチ名                             |
+| `prompt`        | String    | タスクの指示内容                           |
 | `status`        | JobStatus | PENDING/RUNNING/COMPLETED/FAILED/CANCELLED |
-| `output`        | String?   | 最終出力テキスト                   |
-| `resultSummary` | String?   | 完了時のサマリー                   |
-| `prUrl`         | String?   | 作成された PR の URL               |
-| `platform`      | Platform  | タスクを投入したプラットフォーム   |
-| `threadId`      | String?   | 進捗を投稿するスレッド ID          |
-| `channelId`     | String?   | チャンネル ID                      |
-| `startedAt`     | DateTime? | 実行開始時刻                       |
-| `completedAt`   | DateTime? | 完了時刻                           |
+| `output`        | String?   | 最終出力テキスト                           |
+| `resultSummary` | String?   | 完了時のサマリー                           |
+| `prUrl`         | String?   | 作成された PR の URL                       |
+| `platform`      | Platform  | タスクを投入したプラットフォーム           |
+| `threadId`      | String?   | 進捗を投稿するスレッド ID                  |
+| `channelId`     | String?   | チャンネル ID                              |
+| `startedAt`     | DateTime? | 実行開始時刻                               |
+| `completedAt`   | DateTime? | 完了時刻                                   |
 
 ### JobLog
 
 ジョブの実行ログ（イベント）を永続化します。`thinking` イベントは保存しません。
 
-| カラム      | 型       | 説明                                                          |
-| ----------- | -------- | ------------------------------------------------------------- |
-| `id`        | String   | CUID 形式の主キー                                             |
-| `jobId`     | String   | Job の外部キー                                                |
-| `eventType` | String   | agent_step / tool_call / shell / file_edit / error / done     |
-| `content`   | String   | イベント内容（JSON 文字列）                                   |
-| `timestamp` | DateTime | イベント発生時刻                                              |
+| カラム      | 型       | 説明                                                      |
+| ----------- | -------- | --------------------------------------------------------- |
+| `id`        | String   | CUID 形式の主キー                                         |
+| `jobId`     | String   | Job の外部キー                                            |
+| `eventType` | String   | agent_step / tool_call / shell / file_edit / error / done |
+| `content`   | String   | イベント内容（JSON 文字列）                               |
+| `timestamp` | DateTime | イベント発生時刻                                          |
 
 ### McpTool
 
 MCP (Model Context Protocol) ツールの設定を管理します。
 
-| カラム        | 型      | 説明                                              |
-| ------------- | ------- | ------------------------------------------------- |
-| `id`          | String  | CUID 形式の主キー                                 |
-| `name`        | String  | ツール名                                          |
-| `description` | String? | ツールの説明                                      |
-| `endpoint`    | String  | ツールのエンドポイント URL                        |
-| `method`      | String  | HTTP メソッド（デフォルト: POST）                 |
-| `inputType`   | String? | 入力スキーマ（JSON Schema 文字列）                |
-| `outputType`  | String? | 出力スキーマ（JSON Schema 文字列）                |
-| `isGlobal`    | Boolean | true: 全ユーザーに適用、false: 個人設定           |
+| カラム        | 型      | 説明                                                   |
+| ------------- | ------- | ------------------------------------------------------ |
+| `id`          | String  | CUID 形式の主キー                                      |
+| `name`        | String  | ツール名                                               |
+| `description` | String? | ツールの説明                                           |
+| `endpoint`    | String  | ツールのエンドポイント URL                             |
+| `method`      | String  | HTTP メソッド（デフォルト: POST）                      |
+| `inputType`   | String? | 入力スキーマ（JSON Schema 文字列）                     |
+| `outputType`  | String? | 出力スキーマ（JSON Schema 文字列）                     |
+| `isGlobal`    | Boolean | true: 全ユーザーに適用、false: 個人設定                |
 | `ownerId`     | String? | 個人設定の場合のユーザー ID（グローバルの場合は null） |
-| `enabled`     | Boolean | ツールの有効/無効                                 |
-| `config`      | Json?   | 追加設定（JSON）                                  |
+| `enabled`     | Boolean | ツールの有効/無効                                      |
+| `config`      | Json?   | 追加設定（JSON）                                       |
 
 ### Instruction
 
 ユーザーのカスタムインストラクションを管理します。Copilot CLI 実行時にプロンプトに結合されます。
 
-| カラム     | 型      | 説明                                  |
-| ---------- | ------- | ------------------------------------- |
-| `id`       | String  | CUID 形式の主キー                     |
-| `userId`   | String  | User の外部キー                       |
-| `name`     | String  | インストラクション名                  |
-| `content`  | String  | インストラクション内容                |
+| カラム     | 型      | 説明                                   |
+| ---------- | ------- | -------------------------------------- |
+| `id`       | String  | CUID 形式の主キー                      |
+| `userId`   | String  | User の外部キー                        |
+| `name`     | String  | インストラクション名                   |
+| `content`  | String  | インストラクション内容                 |
 | `isActive` | Boolean | 有効/無効（無効は Copilot に渡さない） |
 
 ## インデックス設計

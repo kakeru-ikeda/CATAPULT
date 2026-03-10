@@ -53,34 +53,34 @@ copilot --autopilot --allow-all --output json -p "<タスク内容>"
 
 ## 技術スタック概要
 
-| カテゴリ       | 技術                         |
-| -------------- | ---------------------------- |
-| 言語           | TypeScript (strict)          |
-| ランタイム     | Node.js 22                   |
-| コンテナ       | Docker Compose               |
-| DB             | PostgreSQL 16 + Prisma       |
-| キュー         | Redis 7 + BullMQ             |
-| Bot            | Slack Bolt / Discord.js      |
-| 管理画面       | ReactAdmin v5                |
-| 認証           | GitHub App OAuth             |
-| CLI            | GitHub Copilot CLI (GA)      |
+| カテゴリ   | 技術                    |
+| ---------- | ----------------------- |
+| 言語       | TypeScript (strict)     |
+| ランタイム | Node.js 22              |
+| コンテナ   | Docker Compose          |
+| DB         | PostgreSQL 16 + Prisma  |
+| キュー     | Redis 7 + BullMQ        |
+| Bot        | Slack Bolt / Discord.js |
+| 管理画面   | ReactAdmin v5           |
+| 認証       | GitHub App OAuth        |
+| CLI        | GitHub Copilot CLI (GA) |
 
 詳細は [`docs/tech-stack.md`](./tech-stack.md) を参照してください。
 
 ## ドキュメント一覧
 
-| ファイル                                                   | 内容                             |
-| ---------------------------------------------------------- | -------------------------------- |
-| [`docs/architecture.md`](./architecture.md)                | アーキテクチャ設計               |
-| [`docs/database-schema.md`](./database-schema.md)          | データベース設計                 |
-| [`docs/authentication.md`](./authentication.md)            | 認証設計（OAuth フロー）         |
-| [`docs/streaming.md`](./streaming.md)                      | ストリーミング設計               |
-| [`docs/concurrency.md`](./concurrency.md)                  | 同時実行安全性設計               |
-| [`docs/tech-stack.md`](./tech-stack.md)                    | 技術スタック・Linter/Formatter   |
-| [`docs/phase1-foundation.md`](./phase1-foundation.md)      | Phase 1: プロジェクト基盤構築    |
-| [`docs/phase2-copilot-worker.md`](./phase2-copilot-worker.md) | Phase 2: Copilot CLI Worker 実装 |
-| [`docs/phase3-slack-bot.md`](./phase3-slack-bot.md)        | Phase 3: Slack Bot 実装          |
-| [`docs/phase4-discord-bot.md`](./phase4-discord-bot.md)    | Phase 4: Discord Bot 実装        |
-| [`docs/phase5-react-admin.md`](./phase5-react-admin.md)    | Phase 5: ReactAdmin 管理画面     |
+| ファイル                                                          | 内容                                       |
+| ----------------------------------------------------------------- | ------------------------------------------ |
+| [`docs/architecture.md`](./architecture.md)                       | アーキテクチャ設計                         |
+| [`docs/database-schema.md`](./database-schema.md)                 | データベース設計                           |
+| [`docs/authentication.md`](./authentication.md)                   | 認証設計（OAuth フロー）                   |
+| [`docs/streaming.md`](./streaming.md)                             | ストリーミング設計                         |
+| [`docs/concurrency.md`](./concurrency.md)                         | 同時実行安全性設計                         |
+| [`docs/tech-stack.md`](./tech-stack.md)                           | 技術スタック・Linter/Formatter             |
+| [`docs/phase1-foundation.md`](./phase1-foundation.md)             | Phase 1: プロジェクト基盤構築              |
+| [`docs/phase2-copilot-worker.md`](./phase2-copilot-worker.md)     | Phase 2: Copilot CLI Worker 実装           |
+| [`docs/phase3-slack-bot.md`](./phase3-slack-bot.md)               | Phase 3: Slack Bot 実装                    |
+| [`docs/phase4-discord-bot.md`](./phase4-discord-bot.md)           | Phase 4: Discord Bot 実装                  |
+| [`docs/phase5-react-admin.md`](./phase5-react-admin.md)           | Phase 5: ReactAdmin 管理画面               |
 | [`docs/phase6-mcp-instructions.md`](./phase6-mcp-instructions.md) | Phase 6: MCPツール・インストラクション管理 |
-| [`docs/phase7-security-testing.md`](./phase7-security-testing.md) | Phase 7: セキュリティ強化・テスト |
+| [`docs/phase7-security-testing.md`](./phase7-security-testing.md) | Phase 7: セキュリティ強化・テスト          |

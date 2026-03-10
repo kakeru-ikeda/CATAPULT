@@ -19,15 +19,15 @@ Copilot CLI は `--output json` オプション指定時に、stdout に NDJSON 
 
 ## イベント型一覧
 
-| イベント型    | 説明                         | 通知内容              | Slack/Discord 表示      |
-| ------------- | ---------------------------- | --------------------- | ----------------------- |
-| `agent_step`  | 思考・計画ステップ           | ステータス更新        | 💭 \<content\>          |
-| `tool_call`   | ツール呼び出し               | ツール実行通知        | 🔧 \<tool\>: \<input\>  |
-| `shell`       | シェルコマンド実行           | コマンド実行ログ      | 📟 `\<command\>`        |
-| `file_edit`   | ファイル変更（diff 付き）     | 変更差分表示          | 📝 \<path\>             |
-| `thinking`    | 内部推論                     | **非表示**            | -                       |
-| `error`       | エラー発生                   | エラー通知            | ❌ \<message\>          |
-| `done`        | 完了 + サマリー              | 完了通知              | ✅ \<summary\>          |
+| イベント型   | 説明                      | 通知内容         | Slack/Discord 表示     |
+| ------------ | ------------------------- | ---------------- | ---------------------- |
+| `agent_step` | 思考・計画ステップ        | ステータス更新   | 💭 \<content\>         |
+| `tool_call`  | ツール呼び出し            | ツール実行通知   | 🔧 \<tool\>: \<input\> |
+| `shell`      | シェルコマンド実行        | コマンド実行ログ | 📟 `\<command\>`       |
+| `file_edit`  | ファイル変更（diff 付き） | 変更差分表示     | 📝 \<path\>            |
+| `thinking`   | 内部推論                  | **非表示**       | -                      |
+| `error`      | エラー発生                | エラー通知       | ❌ \<message\>         |
+| `done`       | 完了 + サマリー           | 完了通知         | ✅ \<summary\>         |
 
 ## パイプライン設計
 
@@ -58,20 +58,17 @@ import { spawn } from "child_process";
 
 export class CopilotExecutor extends EventEmitter {
   async execute(options: ExecuteOptions): Promise<void> {
-    const proc = spawn("copilot", [
-      "--autopilot",
-      "--allow-all",
-      "--output",
-      "json",
-      "-p",
-      options.prompt,
-    ], {
-      cwd: options.workDir,
-      env: {
-        ...process.env,
-        GITHUB_TOKEN: options.githubToken,
+    const proc = spawn(
+      "copilot",
+      ["--autopilot", "--allow-all", "--output", "json", "-p", options.prompt],
+      {
+        cwd: options.workDir,
+        env: {
+          ...process.env,
+          GITHUB_TOKEN: options.githubToken,
+        },
       },
-    });
+    );
 
     const rl = createInterface({ input: proc.stdout });
 
@@ -265,10 +262,10 @@ router.get("/:jobId/stream", authMiddleware, async (req, res) => {
 
 Slack のレートリミット（1メッセージ/秒）に対応するため、2秒間のバッファリングを行います。
 
-| プラットフォーム | バッファリング間隔 | 文字数制限        | 対応策            |
-| ---------------- | ----------------- | ----------------- | ----------------- |
-| Slack            | 2秒               | 3000文字/メッセージ | まとめて1投稿     |
-| Discord          | 2秒               | 2000文字/メッセージ | 自動チャンク分割  |
+| プラットフォーム | バッファリング間隔 | 文字数制限          | 対応策           |
+| ---------------- | ------------------ | ------------------- | ---------------- |
+| Slack            | 2秒                | 3000文字/メッセージ | まとめて1投稿    |
+| Discord          | 2秒                | 2000文字/メッセージ | 自動チャンク分割 |
 
 ## shell イベントの出力制限
 
@@ -282,12 +279,12 @@ const stdout = truncate(event.stdout ?? "", 200);
 
 `thinking` イベントを除く全イベントを `JobLog` テーブルに保存します。
 
-| イベント型   | DB 保存 | 理由                                   |
-| ------------ | ------- | -------------------------------------- |
-| `agent_step` | ✅      | 作業の記録として保存                   |
-| `tool_call`  | ✅      | 監査ログとして保存                     |
-| `shell`      | ✅      | コマンド実行履歴として保存             |
-| `file_edit`  | ✅      | 変更ファイルの記録として保存           |
-| `thinking`   | ❌      | 内部推論は保存不要・データ量節約       |
-| `error`      | ✅      | エラー調査のために保存                 |
-| `done`       | ✅      | 完了サマリー・PR URL の記録として保存  |
+| イベント型   | DB 保存 | 理由                                  |
+| ------------ | ------- | ------------------------------------- |
+| `agent_step` | ✅      | 作業の記録として保存                  |
+| `tool_call`  | ✅      | 監査ログとして保存                    |
+| `shell`      | ✅      | コマンド実行履歴として保存            |
+| `file_edit`  | ✅      | 変更ファイルの記録として保存          |
+| `thinking`   | ❌      | 内部推論は保存不要・データ量節約      |
+| `error`      | ✅      | エラー調査のために保存                |
+| `done`       | ✅      | 完了サマリー・PR URL の記録として保存 |

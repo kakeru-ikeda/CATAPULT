@@ -39,7 +39,7 @@ export interface CopilotEvent {
 export interface ExecuteOptions {
   jobId: string;
   prompt: string;
-  repository: string;  // "owner/repo"
+  repository: string; // "owner/repo"
   branch: string;
   githubToken: string;
   mcpConfig?: object;
@@ -56,7 +56,9 @@ export class CopilotExecutor extends EventEmitter {
 
     // git clone
     const repoUrl = `https://x-access-token:${options.githubToken}@github.com/${options.repository}.git`;
-    await execAsync(`git clone --depth=1 --branch=${options.branch} ${repoUrl} .`, { cwd: workDir });
+    await execAsync(`git clone --depth=1 --branch=${options.branch} ${repoUrl} .`, {
+      cwd: workDir,
+    });
 
     // MCP 設定ファイル生成
     if (options.mcpConfig) {

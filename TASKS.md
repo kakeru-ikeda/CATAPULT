@@ -2,21 +2,21 @@
 
 ## Phase 1: プロジェクト基盤構築
 
-- [ ] monorepo セットアップ (npm workspaces)
-- [ ] TypeScript 設定 (tsconfig.base.json + 各パッケージ)
-- [ ] ESLint v9 Flat Config
-- [ ] Prettier 設定
-- [ ] husky + lint-staged
-- [ ] Docker Compose 構成 (postgres, redis, api, bot, worker, frontend)
-- [ ] Dockerfile.api
-- [ ] Dockerfile.worker (Node.js 22 + git + copilot-cli)
-- [ ] Dockerfile.bot
-- [ ] Dockerfile.frontend
-- [ ] Prisma スキーマ定義
-- [ ] Prisma マイグレーション
-- [ ] GitHub Actions CI ワークフロー (typecheck + lint + format + test)
-- [ ] .env.example
-- [ ] README.md
+- [x] monorepo セットアップ (npm workspaces)
+- [x] TypeScript 設定 (tsconfig.base.json + 各パッケージ)
+- [x] ESLint v9 Flat Config
+- [x] Prettier 設定
+- [x] husky + lint-staged
+- [x] Docker Compose 構成 (postgres, redis, api, bot, worker, frontend)
+- [x] Dockerfile.api
+- [x] Dockerfile.worker (Node.js 22 + git + copilot-cli)
+- [x] Dockerfile.bot
+- [x] Dockerfile.frontend
+- [x] Prisma スキーマ定義
+- [x] Prisma マイグレーション
+- [x] GitHub Actions CI ワークフロー (typecheck + lint + format + test)
+- [x] .env.example
+- [x] README.md
 
 ## Phase 2: Copilot CLI Worker 実装
 
