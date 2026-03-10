@@ -44,8 +44,10 @@ export class CopilotExecutor extends EventEmitter {
       cwd: workDir,
     });
 
+    const homeDir = `/tmp/copilot-jobs/${options.jobId}/home`;
+
     if (options.mcpConfig) {
-      await this.writeMcpConfig(options.mcpConfig, workDir);
+      await this.writeMcpConfig(options.mcpConfig, homeDir);
     }
 
     const fullPrompt = this.buildPrompt(options);
@@ -58,7 +60,7 @@ export class CopilotExecutor extends EventEmitter {
         env: {
           ...process.env,
           GITHUB_TOKEN: options.githubToken,
-          HOME: `/tmp/copilot-jobs/${options.jobId}/home`,
+          HOME: homeDir,
         },
       },
     );

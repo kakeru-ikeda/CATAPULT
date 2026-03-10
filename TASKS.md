@@ -115,20 +115,20 @@
 
 ## Phase 6: MCPツール設定・インストラクション管理
 
-- [ ] MCPツール CRUD API
-  - [ ] 一覧取得 (グローバル + 個人)
-  - [ ] 作成 (管理者: グローバル可、利用者: 個人のみ)
-  - [ ] 更新
-  - [ ] 削除
-- [ ] グローバル/個人 MCPツール管理 (isGlobal フラグ)
-- [ ] MCP設定ファイル Worker 注入 (~/.copilot-cli/config.json)
-- [ ] インストラクション CRUD API
-  - [ ] 一覧取得 (自分のみ)
-  - [ ] 作成
-  - [ ] 更新
-  - [ ] 削除
-- [ ] インストラクション → プロンプト結合 (isActive: true のみ)
-- [ ] ReactAdmin 設定画面 (McpToolConfig, McpToolSettings, MyInstructions)
+- [x] MCPツール CRUD API
+  - [x] 一覧取得 (グローバル + 個人)
+  - [x] 作成 (管理者: グローバル可、利用者: 個人のみ)
+  - [x] 更新
+  - [x] 削除
+- [x] グローバル/個人 MCPツール管理 (isGlobal フラグ)
+- [x] MCP設定ファイル Worker 注入 (~/.copilot-cli/config.json)
+- [x] インストラクション CRUD API
+  - [x] 一覧取得 (自分のみ)
+  - [x] 作成
+  - [x] 更新
+  - [x] 削除
+- [x] インストラクション → プロンプト結合 (isActive: true のみ)
+- [x] ReactAdmin 設定画面 (McpToolConfig, McpToolSettings, MyInstructions)
 
 ## Phase 7: セキュリティ強化・テスト・ドキュメント
 

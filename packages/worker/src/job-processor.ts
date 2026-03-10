@@ -47,7 +47,7 @@ async function getActiveInstructions(userId: string): Promise<string | undefined
   });
 
   if (instructions.length === 0) return undefined;
-  return instructions.map((i) => i.content).join("\n\n");
+  return instructions.map((i) => `## ${i.name}\n${i.content}`).join("\n\n");
 }
 
 export const worker = new Worker<JobData>(
