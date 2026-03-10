@@ -49,28 +49,28 @@
 
 ## Phase 3: Slack Bot 実装
 
-- [ ] Slack Bolt セットアップ (Socket Mode)
-- [ ] メンション検知 (app_mention イベント)
-- [ ] 未連携ユーザー自動認証誘導
-  - [ ] ephemeral メッセージで「GitHubで連携する」ボタン表示
-  - [ ] pendingTask を Redis に一時保存
-- [ ] OAuth コールバック処理
-  - [ ] state 検証 (CSRF 防止)
-  - [ ] トークン取得・暗号化保存
-  - [ ] AccountLink 登録
-  - [ ] 連携完了 DM 通知
-- [ ] pendingTask 自動リトライ（「続行しますか？」ボタン）
-- [ ] ワンライナーパターン (owner/repo の自動検出 + リポジトリ検証)
-- [ ] インタラクティブパターン (external_select でリポジトリ選択)
-- [ ] external_select データソース (options ハンドラー)
-- [ ] ブランチ選択 (モーダル)
-- [ ] 確認画面
-- [ ] ボタン本人認証ミドルウェア (validateActionOwner)
-- [ ] JobGuard チェック
-- [ ] ジョブ投入 + キュー位置通知
-- [ ] JobStreamRelay (Redis Pub/Sub → スレッド投稿)
-- [ ] バッファリング (2秒間隔)
-- [ ] イベントフォーマット (agent_step→💭, tool_call→🔧, shell→📟, file_edit→📝, error→❌, done→✅)
+- [x] Slack Bolt セットアップ (Socket Mode)
+- [x] メンション検知 (app_mention イベント)
+- [x] 未連携ユーザー自動認証誘導
+  - [x] ephemeral メッセージで「GitHubで連携する」ボタン表示
+  - [x] pendingTask を Redis に一時保存
+- [x] OAuth コールバック処理
+  - [x] state 検証 (CSRF 防止)
+  - [x] トークン取得・暗号化保存
+  - [x] AccountLink 登録
+  - [x] 連携完了 DM 通知
+- [x] pendingTask 自動リトライ（「続行しますか？」ボタン）
+- [x] ワンライナーパターン (owner/repo の自動検出 + リポジトリ検証)
+- [x] インタラクティブパターン (external_select でリポジトリ選択)
+- [x] external_select データソース (options ハンドラー)
+- [x] ブランチ選択 (モーダル)
+- [x] 確認画面
+- [x] ボタン本人認証ミドルウェア (validateActionOwner)
+- [x] JobGuard チェック
+- [x] ジョブ投入 + キュー位置通知
+- [x] JobStreamRelay (Redis Pub/Sub → スレッド投稿)
+- [x] バッファリング (2秒間隔)
+- [x] イベントフォーマット (agent_step→💭, tool_call→🔧, shell→📟, file_edit→📝, error→❌, done→✅)
 
 ## Phase 4: Discord Bot 実装
 

@@ -71,6 +71,7 @@ CATAPULT は、Slack/Discord から GitHub Copilot CLI を呼び出す開発サ�
 
 ### Linter による整合性
 
+- Lint エラーが発生した場合は、まず `npm run lint:fix` による自動修正を試みること
 - すべてのコード変更後に `npm run lint:fix && npm run format` を実行すること
 - CI でチェックが通らない PR はマージしないこと
 - 型エラー (`tsc --noEmit`) がゼロであることを確認すること
