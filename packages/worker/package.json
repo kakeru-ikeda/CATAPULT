@@ -11,8 +11,14 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@prisma/client": "^7.4.2",
+    "bullmq": "^5.70.4",
+    "ioredis": "^5.10.0",
+    "node-cron": "^4.2.1"
+  },
   "devDependencies": {
+    "@types/node-cron": "^3.0.11",
     "vitest": "^2.0.0"
   }
 }

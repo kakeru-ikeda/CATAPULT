@@ -20,32 +20,32 @@
 
 ## Phase 2: Copilot CLI Worker 実装
 
-- [ ] CopilotExecutor クラス
-  - [ ] `copilot --autopilot --allow-all --output json -p` でプロセス起動
-  - [ ] NDJSON stdout を readline で行ごとにパース
-  - [ ] EventEmitter でイベント配信
-  - [ ] git clone (depth=1, 指定ブランチ)
-  - [ ] ジョブ単位の分離ディレクトリ作成
-  - [ ] MCP設定ファイル生成 (~/.copilot-cli/config.json)
-  - [ ] インストラクション注入（ブランチ名にジョブ ID 含める指示）
-  - [ ] プロセスのキャンセル (SIGTERM)
-- [ ] NDJSON パーサー (output-parser.ts)
-- [ ] PR URL 抽出 (stdout + done イベント)
-- [ ] BullMQ Worker (job-processor.ts)
-  - [ ] ジョブ取り出し → トークン取得 → Executor 実行
-  - [ ] イベントを Redis Pub/Sub で配信
-  - [ ] イベントを JobLog テーブルに保存 (thinking を除く)
-  - [ ] 完了/失敗時にジョブステータス更新
-  - [ ] 作業ディレクトリのクリーンアップ
-  - [ ] concurrency: 3
-- [ ] sandbox.ts (作業ディレクトリ管理)
-- [ ] TokenVault (AES-256-GCM 暗号化)
-- [ ] TokenRefresher (分散ロック付き自動リフレッシュ)
-  - [ ] アクセストークン期限5分前に自動リフレッシュ
-  - [ ] Redis 分散ロック (SET NX EX 30)
-  - [ ] ダブルチェックパターン
-  - [ ] ロック待ちポーリング (最大10秒)
-  - [ ] 定期バッチ (cron 1時間ごと)
+- [x] CopilotExecutor クラス
+  - [x] `copilot --autopilot --allow-all --output json -p` でプロセス起動
+  - [x] NDJSON stdout を readline で行ごとにパース
+  - [x] EventEmitter でイベント配信
+  - [x] git clone (depth=1, 指定ブランチ)
+  - [x] ジョブ単位の分離ディレクトリ作成
+  - [x] MCP設定ファイル生成 (~/.copilot-cli/config.json)
+  - [x] インストラクション注入（ブランチ名にジョブ ID 含める指示）
+  - [x] プロセスのキャンセル (SIGTERM)
+- [x] NDJSON パーサー (output-parser.ts)
+- [x] PR URL 抽出 (stdout + done イベント)
+- [x] BullMQ Worker (job-processor.ts)
+  - [x] ジョブ取り出し → トークン取得 → Executor 実行
+  - [x] イベントを Redis Pub/Sub で配信
+  - [x] イベントを JobLog テーブルに保存 (thinking を除く)
+  - [x] 完了/失敗時にジョブステータス更新
+  - [x] 作業ディレクトリのクリーンアップ
+  - [x] concurrency: 3
+- [x] sandbox.ts (作業ディレクトリ管理)
+- [x] TokenVault (AES-256-GCM 暗号化)
+- [x] TokenRefresher (分散ロック付き自動リフレッシュ)
+  - [x] アクセストークン期限5分前に自動リフレッシュ
+  - [x] Redis 分散ロック (SET NX EX 30)
+  - [x] ダブルチェックパターン
+  - [x] ロック待ちポーリング (最大10秒)
+  - [x] 定期バッチ (cron 1時間ごと)
 
 ## Phase 3: Slack Bot 実装
 
