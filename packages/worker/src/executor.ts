@@ -7,7 +7,19 @@ import { createInterface } from "readline";
 import { execAsync } from "./utils.js";
 
 export interface CopilotEvent {
-  type: "agent_step" | "tool_call" | "shell" | "file_edit" | "thinking" | "error" | "done";
+  type: string;
+  // New Copilot CLI v1.x format fields
+  data?: {
+    content?: string;
+    toolName?: string;
+    arguments?: unknown;
+    success?: boolean;
+    result?: { content?: string; detailedContent?: string };
+    toolRequests?: Array<{ name: string; arguments: unknown; toolCallId: string; type?: string }>;
+    [key: string]: unknown;
+  };
+  exitCode?: number;
+  // Legacy format fields
   content?: string;
   tool?: string;
   input?: unknown;
@@ -60,7 +72,7 @@ export class CopilotExecutor extends EventEmitter {
       [
         "--autopilot",
         "--allow-all",
-        "--output",
+        "--output-format",
         "json",
         ...CopilotExecutor.DENIED_TOOLS.flatMap((tool) => ["--deny-tool", tool]),
         "-p",
@@ -71,6 +83,7 @@ export class CopilotExecutor extends EventEmitter {
         env: {
           ...process.env,
           GITHUB_TOKEN: options.githubToken,
+          GH_TOKEN: options.githubToken,
           HOME: homeDir,
         },
       },
@@ -88,10 +101,20 @@ export class CopilotExecutor extends EventEmitter {
       }
     });
 
+    const stderrLines: string[] = [];
+    this.proc.stderr!.on("data", (chunk: Buffer) => {
+      const text = chunk.toString();
+      stderrLines.push(text);
+      console.error("[copilot stderr]", text.trimEnd());
+    });
+
     return new Promise<void>((resolve, reject) => {
       this.proc!.on("exit", (code) => {
         if (code === 0 || code === null) resolve();
-        else reject(new Error(`Copilot CLI exited with code ${code}`));
+        else {
+          const detail = stderrLines.join("").slice(0, 500);
+          reject(new Error(`Copilot CLI exited with code ${code}${detail ? `: ${detail}` : ""}`));
+        }
       });
       this.proc!.on("error", reject);
     });

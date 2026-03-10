@@ -5,8 +5,11 @@ WORKDIR /app
 COPY package*.json ./
 COPY packages/api/package*.json ./packages/api/
 COPY tsconfig.base.json ./
+COPY prisma ./prisma
 
-RUN npm ci --workspace=packages/api
+RUN npm pkg delete scripts.prepare && npm ci --workspace=packages/api --include-workspace-root
+
+RUN npx prisma generate
 
 COPY packages/api/src ./packages/api/src
 COPY packages/api/tsconfig.json ./packages/api/
@@ -19,10 +22,15 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+RUN apk add --no-cache openssl
+
 COPY package*.json ./
 COPY packages/api/package*.json ./packages/api/
+COPY prisma ./prisma
 
-RUN npm ci --workspace=packages/api --omit=dev
+RUN npm pkg delete scripts.prepare && npm ci --workspace=packages/api --omit=dev
+
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 COPY --from=builder /app/packages/api/dist ./packages/api/dist
 

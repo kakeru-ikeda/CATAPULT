@@ -5,24 +5,28 @@ import { registerOptionsHandlers } from "./handlers/options.js";
 import { startDiscord } from "./platforms/discord.js";
 import { slackApp } from "./platforms/slack.js";
 
-// app_mention イベント: メンション検知
-slackApp.event("app_mention", async ({ event, client }) => {
-  await handleMention(event, client);
-});
+if (slackApp) {
+  // app_mention イベント: メンション検知
+  slackApp.event("app_mention", async ({ event, client }) => {
+    await handleMention(event, client);
+  });
 
-// external_select データソース登録
-registerOptionsHandlers(slackApp);
+  // external_select データソース登録
+  registerOptionsHandlers(slackApp);
 
-// インタラクティブコンポーネント登録
-registerInteractiveHandlers(slackApp);
+  // インタラクティブコンポーネント登録
+  registerInteractiveHandlers(slackApp);
+}
 
 // Discord ハンドラー登録
 registerDiscordHandlers();
 
 // Slack & Discord アプリ起動
 void (async () => {
-  await slackApp.start();
-  console.info("⚡️ CATAPULT Slack Bot is running (Socket Mode)");
+  if (slackApp) {
+    await slackApp.start();
+    console.info("⚡️ CATAPULT Slack Bot is running (Socket Mode)");
+  }
   await startDiscord();
   console.info("🤖 CATAPULT Discord Bot is running");
 })();

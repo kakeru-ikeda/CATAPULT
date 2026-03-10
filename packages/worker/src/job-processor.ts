@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { Worker, type Job } from "bullmq";
-import Redis from "ioredis";
+import { Redis } from "ioredis";
 
 import { CopilotExecutor, type CopilotEvent } from "./executor.js";
 import { extractPrUrl } from "./output-parser.js";
@@ -68,15 +68,25 @@ export const worker = new Worker<JobData>(
     const executor = new CopilotExecutor();
     const events: CopilotEvent[] = [];
 
+    // ノイズの高いストリーミングイベントは Redis 配信をスキップ
+    const SKIP_PUBSUB_TYPES = new Set([
+      "thinking",
+      "assistant.message_delta",
+      "assistant.reasoning_delta",
+      "assistant.turn_start",
+      "assistant.turn_end",
+      "user.message",
+    ]);
+
     executor.on("event", (event: CopilotEvent) => {
       events.push(event);
 
-      if (event.type === "thinking") return;
-
-      // Redis Pub/Sub へ非同期配信（エラーは握り潰さずログ出力）
-      redis.publish(`job:${jobId}`, JSON.stringify(event)).catch((err: unknown) => {
-        console.error(`Redis publish error for job ${jobId}:`, err);
-      });
+      if (!SKIP_PUBSUB_TYPES.has(event.type)) {
+        // Redis Pub/Sub へ非同期配信（エラーは握り潰さずログ出力）
+        redis.publish(`job:${jobId}`, JSON.stringify(event)).catch((err: unknown) => {
+          console.error(`Redis publish error for job ${jobId}:`, err);
+        });
+      }
 
       // JobLog テーブルへ非同期保存
       prisma.jobLog
@@ -111,7 +121,23 @@ export const worker = new Worker<JobData>(
       });
 
       const prUrl = extractPrUrl(events);
-      const doneEvent = events.find((e) => e.type === "done");
+
+      // Copilot CLI v1.x では assistant.message の content に最終サマリーが含まれる
+      const lastAssistantMsg = [...events]
+        .reverse()
+        .find(
+          (e) =>
+            e.type === "assistant.message" &&
+            typeof e.data?.content === "string" &&
+            e.data.content.trim(),
+        );
+      const summary =
+        lastAssistantMsg?.data?.content ??
+        events.find((e) => e.type === "done")?.summary ??
+        "タスクが完了しました";
+
+      // Relay がジョブ完了を検知できるよう明示的に done イベントを送信
+      await redis.publish(`job:${jobId}`, JSON.stringify({ type: "done", summary, prUrl }));
 
       await prisma.job.update({
         where: { id: jobId },
@@ -119,10 +145,16 @@ export const worker = new Worker<JobData>(
           status: "COMPLETED",
           completedAt: new Date(),
           prUrl,
-          resultSummary: doneEvent?.summary,
+          resultSummary: summary,
         },
       });
     } catch (error) {
+      // Relay がエラーを検知できるよう error イベントを送信
+      const errMsg = error instanceof Error ? error.message : "Unknown error";
+      redis
+        .publish(`job:${jobId}`, JSON.stringify({ type: "error", message: errMsg }))
+        .catch(() => {});
+
       await prisma.job.update({
         where: { id: jobId },
         data: { status: "FAILED", completedAt: new Date() },

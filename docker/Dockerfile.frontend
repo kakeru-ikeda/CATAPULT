@@ -6,14 +6,16 @@ COPY package*.json ./
 COPY packages/frontend/package*.json ./packages/frontend/
 COPY tsconfig.base.json ./
 
-RUN npm ci --workspace=packages/frontend
+RUN npm pkg delete scripts.prepare && npm ci --workspace=packages/frontend --include-workspace-root
 
 COPY packages/frontend/src ./packages/frontend/src
 COPY packages/frontend/tsconfig.json ./packages/frontend/
+COPY packages/frontend/index.html ./packages/frontend/
+COPY packages/frontend/vite.config.ts ./packages/frontend/
 
 RUN npm run build --workspace=packages/frontend
 
-FROM nginx:alpine AS runner
+FROM docker.io/library/nginx:alpine AS runner
 
 COPY --from=builder /app/packages/frontend/dist /usr/share/nginx/html
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf

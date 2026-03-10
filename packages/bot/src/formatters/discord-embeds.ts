@@ -23,8 +23,35 @@ export function splitIntoChunks(text: string, maxLength = 1900): string[] {
 }
 
 export function formatDiscordEvent(event: CopilotEvent): string {
-  switch (event.type) {
-    case "agent_step":
+  switch (
+    event.type // New Copilot CLI v1.x format
+  ) {
+    case "assistant.message": {
+      const content = event.data?.content;
+      if (typeof content === "string" && content.trim()) return `💬 ${content}`;
+      return "";
+    }
+    case "tool.execution_start": {
+      const toolName = event.data?.toolName;
+      if (toolName === "bash" || toolName === "shell") {
+        const args = event.data?.arguments as
+          | { description?: string; command?: string }
+          | undefined;
+        const desc = args?.description ?? (args?.command ? truncate(args.command, 100) : undefined);
+        if (desc) return `🔧 \`${desc}\``;
+      }
+      return "";
+    }
+    case "tool.execution_complete":
+      {
+        const { success, toolName, result } = event.data ?? {};
+        if (!success && toolName) {
+          const errMsg = result?.content ?? "";
+          return errMsg ? `❌ **${toolName}**: ${truncate(errMsg, 200)}` : "";
+        }
+        return "";
+      }
+      // Legacy format    case "agent_step":
       return `💭 ${event.content ?? ""}`;
     case "tool_call":
       return `🔧 **${event.tool ?? "unknown"}**: \`${truncate(JSON.stringify(event.input), 100)}\``;

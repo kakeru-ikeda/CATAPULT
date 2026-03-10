@@ -1,34 +1,43 @@
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
 COPY package*.json ./
 COPY packages/worker/package*.json ./packages/worker/
 COPY tsconfig.base.json ./
+COPY prisma ./prisma
 
-RUN npm ci --workspace=packages/worker
+RUN npm pkg delete scripts.prepare && npm ci --workspace=packages/worker --include-workspace-root
+
+RUN npx prisma generate
 
 COPY packages/worker/src ./packages/worker/src
 COPY packages/worker/tsconfig.json ./packages/worker/
 
 RUN npm run build --workspace=packages/worker
 
-FROM node:22-alpine AS runner
+FROM node:24-slim AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# git と GitHub Copilot CLI のインストール
-RUN apk add --no-cache git curl
+# git, openssl と GitHub Copilot CLI のインストール
+# node:24-slim は Debian ベース（glibc）なので @github/copilot-linux-x64 バイナリが動作する
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git curl openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# GitHub Copilot CLI インストール
-RUN npm install -g @githubnext/github-copilot-cli || true
+# GitHub Copilot CLI インストール（プラットフォームバイナリを含む）
+RUN npm install -g @github/copilot @github/copilot-linux-x64
 
 COPY package*.json ./
 COPY packages/worker/package*.json ./packages/worker/
+COPY prisma ./prisma
 
-RUN npm ci --workspace=packages/worker --omit=dev
+RUN npm pkg delete scripts.prepare && npm ci --workspace=packages/worker --omit=dev
+
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 COPY --from=builder /app/packages/worker/dist ./packages/worker/dist
 

@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import Redis from "ioredis";
+import { Redis } from "ioredis";
 
 import { decrypt, encrypt } from "./token-vault.js";
 

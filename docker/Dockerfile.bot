@@ -5,8 +5,11 @@ WORKDIR /app
 COPY package*.json ./
 COPY packages/bot/package*.json ./packages/bot/
 COPY tsconfig.base.json ./
+COPY prisma ./prisma
 
-RUN npm ci --workspace=packages/bot
+RUN npm pkg delete scripts.prepare && npm ci --workspace=packages/bot --include-workspace-root
+
+RUN npx prisma generate
 
 COPY packages/bot/src ./packages/bot/src
 COPY packages/bot/tsconfig.json ./packages/bot/
@@ -19,10 +22,15 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+RUN apk add --no-cache openssl
+
 COPY package*.json ./
 COPY packages/bot/package*.json ./packages/bot/
+COPY prisma ./prisma
 
-RUN npm ci --workspace=packages/bot --omit=dev
+RUN npm pkg delete scripts.prepare && npm ci --workspace=packages/bot --omit=dev
+
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 COPY --from=builder /app/packages/bot/dist ./packages/bot/dist
 

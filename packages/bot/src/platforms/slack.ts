@@ -1,9 +1,20 @@
 import { App, LogLevel } from "@slack/bolt";
 
-export const slackApp = new App({
-  token: process.env["SLACK_BOT_TOKEN"]!,
-  signingSecret: process.env["SLACK_SIGNING_SECRET"]!,
-  socketMode: true,
-  appToken: process.env["SLACK_APP_TOKEN"]!,
-  logLevel: LogLevel.INFO,
-});
+function createSlackApp(): App | null {
+  const token = process.env["SLACK_BOT_TOKEN"];
+  const signingSecret = process.env["SLACK_SIGNING_SECRET"];
+  const appToken = process.env["SLACK_APP_TOKEN"];
+  if (!token || !signingSecret || !appToken) {
+    console.warn("Slack tokens not set, Slack bot disabled");
+    return null;
+  }
+  return new App({
+    token,
+    signingSecret,
+    socketMode: true,
+    appToken,
+    logLevel: LogLevel.INFO,
+  });
+}
+
+export const slackApp = createSlackApp();

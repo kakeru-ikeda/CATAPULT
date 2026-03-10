@@ -241,6 +241,23 @@ router.get("/github/callback", async (req: Request, res: Response) => {
       });
     }
 
+    if (stateData.platform === "discord" && stateData.discordUserId) {
+      await prisma.accountLink.upsert({
+        where: {
+          platform_platformUserId: {
+            platform: "DISCORD",
+            platformUserId: stateData.discordUserId,
+          },
+        },
+        update: { userId: user.id },
+        create: {
+          userId: user.id,
+          platform: "DISCORD",
+          platformUserId: stateData.discordUserId,
+        },
+      });
+    }
+
     // Web 管理画面フロー: JWT を発行してフロントエンドへリダイレクト
     if (stateData.platform === "web" && stateData.redirectUrl) {
       const token = issueJwt({
@@ -255,7 +272,9 @@ router.get("/github/callback", async (req: Request, res: Response) => {
       return;
     }
 
-    res.redirect(`${process.env["APP_URL"] ?? ""}/auth/success`);
+    res.send(
+      `<!DOCTYPE html><html><head><meta charset="utf-8"><title>連携完了 - CATAPULT</title><style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#0B0F19;color:#e2e8f0}div{text-align:center}h1{font-size:2rem;margin-bottom:0.5rem}p{color:#8B949E}</style></head><body><div><h1>✅ GitHub 連携完了</h1><p>GitHub アカウント <strong>${githubUser.login}</strong> と連携しました。</p><p>このウィンドウを閉じてください。</p></div></body></html>`,
+    );
   } catch (err) {
     console.error("OAuth callback error:", err);
     res.status(500).send("Authentication failed");

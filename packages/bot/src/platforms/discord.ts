@@ -14,5 +14,10 @@ discordClient.once("ready", () => {
 });
 
 export async function startDiscord(): Promise<void> {
-  await discordClient.login(process.env["DISCORD_BOT_TOKEN"]);
+  const token = process.env["DISCORD_BOT_TOKEN"];
+  if (!token) {
+    console.warn("DISCORD_BOT_TOKEN not set, Discord bot disabled");
+    return;
+  }
+  await discordClient.login(token);
 }

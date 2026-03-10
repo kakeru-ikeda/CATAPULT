@@ -34,7 +34,8 @@ async function handleUnauthenticatedDiscordUser(
     600,
   );
 
-  const authUrl = `https://${process.env["API_BASE_URL"]}/api/auth/github?state=${state}&platform=discord`;
+  const appUrl = process.env["APP_URL"] ?? process.env["API_BASE_URL"] ?? "http://localhost:3000";
+  const authUrl = `${appUrl}/api/auth/github?state=${state}&platform=discord`;
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder().setLabel("GitHub で連携する 🔗").setStyle(ButtonStyle.Link).setURL(authUrl),

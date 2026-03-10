@@ -33,6 +33,13 @@ services:
       DATABASE_URL: postgresql://catapult:${POSTGRES_PASSWORD}@postgres:5432/catapult
       REDIS_URL: redis://redis:6379
       NODE_ENV: production
+      GITHUB_APP_CLIENT_ID: ${GITHUB_APP_CLIENT_ID}
+      GITHUB_APP_CLIENT_SECRET: ${GITHUB_APP_CLIENT_SECRET}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
     ports:
       - "3000:3000"
     depends_on:
@@ -46,10 +53,19 @@ services:
       context: .
       dockerfile: docker/Dockerfile.bot
     environment:
+      DATABASE_URL: postgresql://catapult:${POSTGRES_PASSWORD}@postgres:5432/catapult
       REDIS_URL: redis://redis:6379
       API_BASE_URL: http://api:3000
       NODE_ENV: production
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      SLACK_APP_TOKEN: ${SLACK_APP_TOKEN:-}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
       api:
@@ -62,6 +78,7 @@ services:
     environment:
       DATABASE_URL: postgresql://catapult:${POSTGRES_PASSWORD}@postgres:5432/catapult
       REDIS_URL: redis://redis:6379
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
       NODE_ENV: production
     deploy:
       replicas: 2
@@ -76,7 +93,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile.frontend
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       - api
 

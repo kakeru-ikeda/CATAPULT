@@ -27,6 +27,7 @@ export interface TaskContext {
 }
 
 export async function submitJob(ctx: TaskContext): Promise<void> {
+  if (!slackApp) throw new Error("Slack is not enabled");
   const client = slackApp.client;
 
   try {

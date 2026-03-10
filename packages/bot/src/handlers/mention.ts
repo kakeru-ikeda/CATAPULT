@@ -33,7 +33,8 @@ async function handleUnauthenticatedUser(
     600,
   );
 
-  const authUrl = `https://${process.env["API_BASE_URL"]}/api/auth/github?state=${state}&platform=slack`;
+  const appUrl = process.env["APP_URL"] ?? process.env["API_BASE_URL"] ?? "http://localhost:3000";
+  const authUrl = `${appUrl}/api/auth/github?state=${state}&platform=slack`;
 
   await client.chat.postEphemeral({
     channel: event.channel,
