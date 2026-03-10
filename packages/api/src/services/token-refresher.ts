@@ -1,49 +1,16 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
-
 import { PrismaClient } from "@prisma/client";
 import Redis from "ioredis";
+
+import { encrypt, decrypt } from "./token-vault.js";
 
 const prisma = new PrismaClient();
 const redis = new Redis(process.env["REDIS_URL"]!);
 
-const ALGORITHM = "aes-256-gcm";
 const FIVE_MINUTES_MS = 5 * 60 * 1000;
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const LOCK_TTL_SECONDS = 30;
 const POLL_INTERVAL_MS = 500;
 const POLL_MAX_MS = 10_000;
-
-function getKey(): Buffer {
-  const keyHex = process.env["TOKEN_ENCRYPTION_KEY"];
-  if (!keyHex) throw new Error("TOKEN_ENCRYPTION_KEY environment variable is not set");
-  const key = Buffer.from(keyHex, "hex");
-  if (key.length !== 32) throw new Error("TOKEN_ENCRYPTION_KEY must be 64 hex characters");
-  return key;
-}
-
-function decrypt(ciphertext: string): string {
-  const key = getKey();
-  const parts = ciphertext.split(":");
-  if (parts.length !== 3) throw new Error("Invalid ciphertext format");
-  const [ivB64, authTagB64, encryptedB64] = parts as [string, string, string];
-  const iv = Buffer.from(ivB64, "base64");
-  const authTag = Buffer.from(authTagB64, "base64");
-  const encrypted = Buffer.from(encryptedB64, "base64");
-  const decipher = createDecipheriv(ALGORITHM, key, iv);
-  decipher.setAuthTag(authTag);
-  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
-}
-
-function encrypt(plaintext: string): string {
-  const key = getKey();
-  const iv = randomBytes(12);
-  const cipher = createCipheriv(ALGORITHM, key, iv);
-  const encrypted = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
-  const authTag = cipher.getAuthTag();
-  return [iv.toString("base64"), authTag.toString("base64"), encrypted.toString("base64")].join(
-    ":",
-  );
-}
 
 async function waitForRefresh(userId: string): Promise<string> {
   const deadline = Date.now() + POLL_MAX_MS;

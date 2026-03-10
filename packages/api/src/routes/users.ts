@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import type { Router, Request, Response } from "express";
 import { Router as createRouter } from "express";
 
+import { auditLog } from "../middleware/audit-log.js";
 import { authMiddleware, adminMiddleware } from "../middleware/auth.js";
 
 const prisma = new PrismaClient();
@@ -77,6 +78,12 @@ router.put("/:id", authMiddleware, adminMiddleware, async (req: Request, res: Re
       updatedAt: true,
     },
   });
+
+  await auditLog(req.user!.id, "user.role.change", `user:${user.id}`, {
+    newRole: role,
+    targetUser: user.githubUsername,
+  });
+
   res.json(user);
 });
 

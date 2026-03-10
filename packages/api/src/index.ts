@@ -6,7 +6,7 @@ import { jobsRouter } from "./routes/jobs.js";
 import { mcpToolsRouter } from "./routes/mcp-tools.js";
 import { usersRouter } from "./routes/users.js";
 
-const app = express();
+export const app = express();
 const PORT = process.env["PORT"] ?? 3000;
 
 app.use(express.json());

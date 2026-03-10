@@ -134,25 +134,25 @@
 
 ### セキュリティ
 
-- [ ] トークン暗号化 (AES-256-GCM + 環境変数マスターキー)
-- [ ] 実行分離 (ジョブ単位の一時ディレクトリ + 完了後クリーンアップ)
-- [ ] 危険コマンドブロックリスト (--deny-tool)
-- [ ] レート制限 (JobGuard: maxConcurrentPerUser, maxConcurrentPerRepo, maxDailyPerUser, cooldown)
-- [ ] 監査ログ (ジョブ作成・キャンセル・トークン操作・ロール変更)
+- [x] トークン暗号化 (AES-256-GCM + 環境変数マスターキー)
+- [x] 実行分離 (ジョブ単位の一時ディレクトリ + 完了後クリーンアップ)
+- [x] 危険コマンドブロックリスト (--deny-tool)
+- [x] レート制限 (JobGuard: maxConcurrentPerUser, maxConcurrentPerRepo, maxDailyPerUser, cooldown)
+- [x] 監査ログ (ジョブ作成・キャンセル・トークン操作・ロール変更)
 
 ### テスト
 
-- [ ] 単体テスト: output-parser
-- [ ] 単体テスト: token-vault (暗号化・復号化)
-- [ ] 単体テスト: job-guard
-- [ ] 単体テスト: streaming フォーマッター
-- [ ] 統合テスト: POST /api/jobs
-- [ ] 統合テスト: GET /api/jobs/:id/stream (SSE)
-- [ ] 統合テスト: OAuth コールバック
-- [ ] E2E テスト: ジョブ作成→実行→完了フロー
+- [x] 単体テスト: output-parser
+- [x] 単体テスト: token-vault (暗号化・復号化)
+- [x] 単体テスト: job-guard
+- [x] 単体テスト: streaming フォーマッター
+- [x] 統合テスト: POST /api/jobs
+- [x] 統合テスト: GET /api/jobs/:id/stream (SSE)
+- [x] 統合テスト: OAuth コールバック
+- [x] E2E テスト: ジョブ作成→実行→完了フロー
 
 ### ドキュメント
 
-- [ ] README.md (セットアップガイド完成版)
-- [ ] 環境変数一覧ドキュメント (docs/env-variables.md)
-- [ ] API リファレンス (docs/api-reference.md)
+- [x] README.md (セットアップガイド完成版)
+- [x] 環境変数一覧ドキュメント (docs/env-variables.md)
+- [x] API リファレンス (docs/api-reference.md)

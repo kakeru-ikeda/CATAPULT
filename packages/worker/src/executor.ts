@@ -34,6 +34,9 @@ export interface ExecuteOptions {
 export class CopilotExecutor extends EventEmitter {
   private proc: ChildProcess | null = null;
 
+  // 危険なツールのブロックリスト
+  private static readonly DENIED_TOOLS = ["delete_repo", "transfer_repo", "archive_repo"] as const;
+
   async execute(options: ExecuteOptions): Promise<void> {
     const workDir = `/tmp/copilot-jobs/${options.jobId}/workspace`;
     mkdirSync(workDir, { recursive: true });
@@ -54,7 +57,15 @@ export class CopilotExecutor extends EventEmitter {
 
     this.proc = spawn(
       "copilot",
-      ["--autopilot", "--allow-all", "--output", "json", "-p", fullPrompt],
+      [
+        "--autopilot",
+        "--allow-all",
+        "--output",
+        "json",
+        ...CopilotExecutor.DENIED_TOOLS.flatMap((tool) => ["--deny-tool", tool]),
+        "-p",
+        fullPrompt,
+      ],
       {
         cwd: workDir,
         env: {

@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import type { Router, Request, Response } from "express";
 import { Router as createRouter } from "express";
 
+import { auditLog } from "../middleware/audit-log.js";
 import { authMiddleware, adminMiddleware } from "../middleware/auth.js";
 
 const prisma = new PrismaClient();
@@ -53,6 +54,7 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
       ownerId: req.user!.id,
     },
   });
+  await auditLog(req.user!.id, "mcp-tool.create", `mcp-tool:${tool.id}`, { name });
   res.status(201).json(tool);
 });
 
@@ -100,6 +102,7 @@ router.post("/global", authMiddleware, adminMiddleware, async (req: Request, res
       ownerId: null,
     },
   });
+  await auditLog(req.user!.id, "mcp-tool.create.global", `mcp-tool:${tool.id}`, { name });
   res.status(201).json(tool);
 });
 
@@ -129,6 +132,7 @@ router.put("/global/:id", authMiddleware, adminMiddleware, async (req: Request, 
     where: { id: req.params["id"] as string },
     data: { name, description, endpoint, method, enabled },
   });
+  await auditLog(req.user!.id, "mcp-tool.update.global", `mcp-tool:${updated.id}`, { name });
   res.json(updated);
 });
 
@@ -139,6 +143,11 @@ router.delete(
   adminMiddleware,
   async (req: Request, res: Response) => {
     await prisma.mcpTool.delete({ where: { id: req.params["id"] as string } });
+    await auditLog(
+      req.user!.id,
+      "mcp-tool.delete.global",
+      `mcp-tool:${req.params["id"] as string}`,
+    );
     res.json({ id: req.params["id"] as string });
   },
 );
@@ -181,6 +190,7 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response) => {
     where: { id: req.params["id"] as string },
     data: { name, description, endpoint, method, enabled },
   });
+  await auditLog(req.user!.id, "mcp-tool.update", `mcp-tool:${updated.id}`, { name });
   res.json(updated);
 });
 
@@ -197,6 +207,7 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
   }
 
   await prisma.mcpTool.delete({ where: { id: req.params["id"] as string } });
+  await auditLog(req.user!.id, "mcp-tool.delete", `mcp-tool:${req.params["id"] as string}`);
   res.json({ id: req.params["id"] as string });
 });
 

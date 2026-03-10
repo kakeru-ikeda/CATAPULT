@@ -19,6 +19,7 @@ enum Role {
 enum Platform {
     SLACK
     DISCORD
+    API
 }
 
 // ジョブステータス
