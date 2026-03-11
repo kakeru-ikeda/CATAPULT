@@ -42,16 +42,16 @@ export function formatDiscordEvent(event: CopilotEvent): string {
       }
       return "";
     }
-    case "tool.execution_complete":
-      {
-        const { success, toolName, result } = event.data ?? {};
-        if (!success && toolName) {
-          const errMsg = result?.content ?? "";
-          return errMsg ? `❌ **${toolName}**: ${truncate(errMsg, 200)}` : "";
-        }
-        return "";
+    case "tool.execution_complete": {
+      const { success, toolName, result } = event.data ?? {};
+      if (!success && toolName) {
+        const errMsg = result?.content ?? "";
+        return errMsg ? `❌ **${toolName}**: ${truncate(errMsg, 200)}` : "";
       }
-      // Legacy format    case "agent_step":
+      return "";
+    }
+    // Legacy format
+    case "agent_step":
       return `💭 ${event.content ?? ""}`;
     case "tool_call":
       return `🔧 **${event.tool ?? "unknown"}**: \`${truncate(JSON.stringify(event.input), 100)}\``;
