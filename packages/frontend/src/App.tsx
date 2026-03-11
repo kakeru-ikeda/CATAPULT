@@ -8,6 +8,7 @@ import { McpToolConfig } from "./pages/admin/McpToolConfig.js";
 import { SystemSettings } from "./pages/admin/SystemSettings.js";
 import { UserEdit, UserList } from "./pages/admin/UserList.js";
 import { AuthCallback } from "./pages/AuthCallback.js";
+import { LoginPage } from "./pages/LoginPage.js";
 import { AccountLink } from "./pages/user/AccountLink.js";
 import { Dashboard } from "./pages/user/Dashboard.js";
 import { McpToolSettings } from "./pages/user/McpToolSettings.js";
@@ -15,7 +16,12 @@ import { MyInstructions } from "./pages/user/MyInstructions.js";
 import { MyJobs } from "./pages/user/MyJobs.js";
 
 export const App = () => (
-  <Admin dataProvider={dataProvider} authProvider={authProvider} dashboard={Dashboard}>
+  <Admin
+    dataProvider={dataProvider}
+    authProvider={authProvider}
+    dashboard={Dashboard}
+    loginPage={LoginPage}
+  >
     {(permissions) => (
       <>
         {/* 管理者モード */}
