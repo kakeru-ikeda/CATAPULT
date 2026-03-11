@@ -156,3 +156,15 @@
 - [x] README.md (セットアップガイド完成版)
 - [x] 環境変数一覧ドキュメント (docs/env-variables.md)
 - [x] API リファレンス (docs/api-reference.md)
+
+## 軽量セッション（継続チャット）
+
+- [x] DBスキーマ: Job.parentJobId 追加 + JobSession 自己リレーション
+- [x] マイグレーション: 20260311104453_add_parent_job_session
+- [x] worker/executor.ts: previousContext を ExecuteOptions に追加、buildPrompt に「前回の作業サマリー」セクション注入
+- [x] worker/job-processor.ts: parentJobId から parent.resultSummary + prUrl を取得して executor に渡す
+- [x] bot/mention.ts: thread_ts ?? ts でスレッドID正規化
+- [x] bot/task.ts: submitJob で threadId による前回 COMPLETED ジョブ検索 → parentJobId 設定
+- [x] bot/discord-task.ts: submitDiscordJob で channelId による前回 COMPLETED ジョブ検索 → parentJobId 設定
+- [x] docs/session-strategy.md 作成
+- [x] docs/database-schema.md 更新

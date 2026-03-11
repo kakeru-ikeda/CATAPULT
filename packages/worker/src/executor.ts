@@ -41,6 +41,7 @@ export interface ExecuteOptions {
   githubToken: string;
   mcpConfig?: object;
   instructions?: string;
+  previousContext?: string; // 前回ジョブのサマリー（軽量セッション）
 }
 
 export class CopilotExecutor extends EventEmitter {
@@ -132,7 +133,10 @@ export class CopilotExecutor extends EventEmitter {
   copilot/job-${jobShortId}/<機能名>
 例: copilot/job-${jobShortId}/fix-login-bug
 `;
-    return [branchInstruction, options.instructions ?? "", options.prompt]
+    const previousContextSection = options.previousContext
+      ? `## 前回の作業サマリー\n${options.previousContext}`
+      : "";
+    return [branchInstruction, options.instructions ?? "", previousContextSection, options.prompt]
       .filter(Boolean)
       .join("\n\n");
   }

@@ -43,6 +43,17 @@ async function submitDiscordJob(
     throw err;
   }
 
+  // Discord スレッド内メンションの場合 channelId = thread.id → 前回ジョブを検索（軽量セッション）
+  const parentJob = await prisma.job.findFirst({
+    where: {
+      userId: user.id,
+      threadId: message.channelId,
+      status: "COMPLETED",
+    },
+    orderBy: { completedAt: "desc" },
+    select: { id: true },
+  });
+
   const job = await prisma.job.create({
     data: {
       userId: user.id,
@@ -53,6 +64,7 @@ async function submitDiscordJob(
       platform: "DISCORD",
       channelId: message.channelId,
       threadId: message.id,
+      parentJobId: parentJob?.id ?? null,
     },
   });
 

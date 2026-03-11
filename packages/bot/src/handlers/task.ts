@@ -44,6 +44,19 @@ export async function submitJob(ctx: TaskContext): Promise<void> {
     throw err;
   }
 
+  // 同一スレッドの直前 COMPLETED ジョブを検索（軽量セッション）
+  const parentJob = ctx.threadTs
+    ? await prisma.job.findFirst({
+        where: {
+          userId: ctx.userId,
+          threadId: ctx.threadTs,
+          status: "COMPLETED",
+        },
+        orderBy: { completedAt: "desc" },
+        select: { id: true },
+      })
+    : null;
+
   const job = await prisma.job.create({
     data: {
       userId: ctx.userId,
@@ -54,6 +67,7 @@ export async function submitJob(ctx: TaskContext): Promise<void> {
       platform: "SLACK",
       channelId: ctx.channelId,
       threadId: ctx.threadTs,
+      parentJobId: parentJob?.id ?? null,
     },
   });
 

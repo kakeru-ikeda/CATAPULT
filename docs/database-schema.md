@@ -87,13 +87,16 @@ model Job {
   platform      Platform
   threadId      String?   // Slack/Discord のスレッド ID
   channelId     String?   // Slack/Discord のチャンネル ID
+  parentJobId   String?   // 前回ジョブへの参照（軽量セッション）
   startedAt     DateTime?
   completedAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  logs    JobLog[]
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs     JobLog[]
+  parent   Job?     @relation("JobSession", fields: [parentJobId], references: [id])
+  children Job[]    @relation("JobSession")
 }
 
 // ジョブログ（イベントログ）

@@ -69,6 +69,10 @@ export async function handleMention(event: AppMentionEvent, client: WebClient): 
 
   const text = event.text.replace(/<@[A-Z0-9]+>/g, "").trim();
 
+  // スレッド返信の場合は thread_ts（親メッセージの ts）を使用し、セッション継続を実現する
+  const threadTs =
+    "thread_ts" in event && typeof event.thread_ts === "string" ? event.thread_ts : event.ts;
+
   const accountLink = await prisma.accountLink.findUnique({
     where: {
       platform_platformUserId: {
@@ -84,5 +88,5 @@ export async function handleMention(event: AppMentionEvent, client: WebClient): 
     return;
   }
 
-  await handleTask(accountLink.user, text, event.channel, event.ts, client);
+  await handleTask(accountLink.user, text, event.channel, threadTs, client);
 }

@@ -110,6 +110,20 @@ export const worker = new Worker<JobData>(
         getActiveInstructions(dbJob.userId),
       ]);
 
+      // 前回ジョブのサマリーを取得（軽量セッション）
+      let previousContext: string | undefined;
+      if (dbJob.parentJobId) {
+        const parentJob = await prisma.job.findUnique({
+          where: { id: dbJob.parentJobId },
+          select: { resultSummary: true, prUrl: true },
+        });
+        if (parentJob?.resultSummary) {
+          previousContext = parentJob.prUrl
+            ? `${parentJob.resultSummary}\n\nPR: ${parentJob.prUrl}`
+            : parentJob.resultSummary;
+        }
+      }
+
       await executor.execute({
         jobId,
         prompt: dbJob.prompt,
@@ -118,6 +132,7 @@ export const worker = new Worker<JobData>(
         githubToken,
         mcpConfig,
         instructions,
+        previousContext,
       });
 
       const prUrl = extractPrUrl(events);
