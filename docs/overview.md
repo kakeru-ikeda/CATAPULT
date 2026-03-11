@@ -84,3 +84,5 @@ copilot --autopilot --allow-all --output json -p "<タスク内容>"
 | [`docs/phase5-react-admin.md`](./phase5-react-admin.md)           | Phase 5: ReactAdmin 管理画面               |
 | [`docs/phase6-mcp-instructions.md`](./phase6-mcp-instructions.md) | Phase 6: MCPツール・インストラクション管理 |
 | [`docs/phase7-security-testing.md`](./phase7-security-testing.md) | Phase 7: セキュリティ強化・テスト          |
+| [`docs/skills.md`](./skills.md)                                   | Skills 機能設計                            |
+| [`docs/phase8-skills.md`](./phase8-skills.md)                     | Phase 8: Skills 機能実装                   |
