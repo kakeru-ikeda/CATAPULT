@@ -11,9 +11,30 @@ interface SendableChannel {
 
 const redis = new Redis(process.env["REDIS_URL"]!);
 
+// Discord メッセージの文字数上限は 2000 文字
+const DISCORD_MSG_MAX = 1950;
+
 function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + "...";
+}
+
+function splitIntoChunks(text: string, maxLength: number): string[] {
+  if (text.length <= maxLength) return [text];
+  const chunks: string[] = [];
+  const lines = text.split("\n");
+  let current = "";
+  for (const line of lines) {
+    const addition = current ? "\n" + line : line;
+    if ((current + addition).length > maxLength) {
+      if (current) chunks.push(current);
+      current = line.length > maxLength ? line.slice(0, maxLength) : line;
+    } else {
+      current = current + addition;
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks;
 }
 
 export class DiscordJobStreamRelay {
@@ -111,10 +132,12 @@ export class DiscordJobStreamRelay {
           clearTimeout(this.editTimer);
           this.editTimer = null;
         }
-        const summary = truncate(event.summary ?? "タスクが完了しました", 500);
-        let text = `✅ **完了**: ${summary}`;
-        if (event.prUrl) text += `\n[PR を開く](${event.prUrl})`;
-        void this.editProgressMessage(text).then(() => this.cleanup());
+        let statusText = "✅ **完了**";
+        if (event.prUrl) statusText += `\n[PR を開く](${event.prUrl})`;
+        void this.editProgressMessage(statusText).then(async () => {
+          await this.postSummaryMessage(event.summary ?? "タスクが完了しました");
+          this.cleanup();
+        });
         break;
       }
       case "error": {
@@ -153,6 +176,20 @@ export class DiscordJobStreamRelay {
     if (this.lastTool) text += `\n🔧 \`${this.lastTool}\``;
     if (this.lastAssistantMessage) text += `\n💬 ${this.lastAssistantMessage}`;
     return text;
+  }
+
+  private async postSummaryMessage(summary: string): Promise<void> {
+    const chunks = splitIntoChunks(summary, DISCORD_MSG_MAX);
+    for (const chunk of chunks) {
+      try {
+        await this.channel.send(chunk);
+      } catch (err) {
+        console.error(
+          `DiscordJobStreamRelay: failed to post summary chunk for job ${this.jobId}:`,
+          err,
+        );
+      }
+    }
   }
 
   private async editProgressMessage(content: string): Promise<void> {

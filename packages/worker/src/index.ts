@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import cron from "node-cron";
 
-import { worker, prisma as jobPrisma, redis as jobRedis } from "./job-processor.js";
+import { createWorker, prisma as jobPrisma, redis as jobRedis } from "./job-processor.js";
 import { batchRefreshExpiringTokens } from "./token-refresher.js";
 
 async function waitForDatabase(maxRetries = 10, delayMs = 3000): Promise<void> {
@@ -21,10 +21,9 @@ async function waitForDatabase(maxRetries = 10, delayMs = 3000): Promise<void> {
   throw new Error("Failed to connect to database after retries");
 }
 
-// Worker が DB 準備完了前にジョブを拾わないよう一時停止
-await worker.pause();
+// Worker が DB 準備完了前にジョブを拾わないよう DB 確認後に生成する
 await waitForDatabase();
-worker.resume();
+const worker = createWorker();
 
 worker.on("completed", (job) => {
   console.info(`Job ${job.id} completed`);

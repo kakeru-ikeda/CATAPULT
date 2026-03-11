@@ -9,6 +9,27 @@ function truncate(text: string, maxLength: number): string {
   return text.slice(0, maxLength) + "...";
 }
 
+// Slack section block の文字数上限は 3000 文字
+const SLACK_BLOCK_MAX = 2950;
+
+function splitIntoChunks(text: string, maxLength: number): string[] {
+  if (text.length <= maxLength) return [text];
+  const chunks: string[] = [];
+  const lines = text.split("\n");
+  let current = "";
+  for (const line of lines) {
+    const addition = current ? "\n" + line : line;
+    if ((current + addition).length > maxLength) {
+      if (current) chunks.push(current);
+      current = line.length > maxLength ? line.slice(0, maxLength) : line;
+    } else {
+      current = current + addition;
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
 export class JobStreamRelay {
   private subscriber: Redis | null = null;
   private finished = false;
@@ -100,10 +121,12 @@ export class JobStreamRelay {
           clearTimeout(this.editTimer);
           this.editTimer = null;
         }
-        const summary = truncate(event.summary ?? "タスクが完了しました", 500);
-        let text = `✅ *完了*: ${summary}`;
-        if (event.prUrl) text += `\n<${event.prUrl}|PR を開く>`;
-        void this.updateProgressMessage(text).then(() => this.cleanup());
+        let statusText = "✅ *完了*";
+        if (event.prUrl) statusText += `\n<${event.prUrl}|PR を開く>`;
+        void this.updateProgressMessage(statusText).then(async () => {
+          await this.postSummaryMessage(event.summary ?? "タスクが完了しました");
+          this.cleanup();
+        });
         break;
       }
       case "error": {
@@ -142,6 +165,22 @@ export class JobStreamRelay {
     if (this.lastTool) text += `\n🔧 \`${this.lastTool}\``;
     if (this.lastAssistantMessage) text += `\n💬 ${this.lastAssistantMessage}`;
     return text;
+  }
+
+  private async postSummaryMessage(summary: string): Promise<void> {
+    const chunks = splitIntoChunks(summary, SLACK_BLOCK_MAX);
+    for (const chunk of chunks) {
+      try {
+        await this.slack.client.chat.postMessage({
+          channel: this.channelId,
+          thread_ts: this.threadTs,
+          text: chunk,
+          blocks: [{ type: "section", text: { type: "mrkdwn", text: chunk } }],
+        });
+      } catch (err) {
+        console.error(`JobStreamRelay: failed to post summary chunk for job ${this.jobId}:`, err);
+      }
+    }
   }
 
   private async updateProgressMessage(text: string): Promise<void> {
