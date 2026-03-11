@@ -364,7 +364,7 @@ async function showDiscordRepoSelect(user: User, task: string, message: Message)
 }
 
 export async function handleDiscordTask(user: User, text: string, message: Message): Promise<void> {
-  // ワンライナーパターン: owner/repo が含まれている場合
+  // ワンライナーパターン: owner/repo が含まれている場合（スレッド継続より優先）
   const match = text.match(REPO_PATTERN);
   if (match?.[1]) {
     const repo = match[1];
@@ -378,6 +378,27 @@ export async function handleDiscordTask(user: User, text: string, message: Messa
       await showDiscordDeliverableSelect(user, text, repo, defaultBranch, message, replyMsg);
       return;
     }
+  }
+
+  // スレッド継続パターン: 同一チャンネル（スレッド）の直前 COMPLETED ジョブからリポジトリ・ブランチを引き継ぐ
+  const sessionJob = await prisma.job.findFirst({
+    where: { userId: user.id, threadId: message.channelId, status: "COMPLETED" },
+    orderBy: { completedAt: "desc" },
+    select: { repository: true, branch: true },
+  });
+  if (sessionJob) {
+    const replyMsg = await message.reply({
+      content: `🔄 前回の **${sessionJob.repository}** \`${sessionJob.branch}\` を継続します。どの形式で完了しますか？`,
+    });
+    await showDiscordDeliverableSelect(
+      user,
+      text,
+      sessionJob.repository,
+      sessionJob.branch,
+      message,
+      replyMsg,
+    );
+    return;
   }
 
   // インタラクティブパターン: StringSelectMenu でリポジトリ選択

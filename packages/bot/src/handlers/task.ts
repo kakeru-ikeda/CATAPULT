@@ -182,8 +182,31 @@ export async function handleTask(
   });
   const slackUserId = slackLink?.platformUserId ?? user.id;
 
-  // ワンライナーパターン: owner/repo が含まれている場合
+  // スレッド継続パターン: 同一スレッドの直前 COMPLETED ジョブからリポジトリ・ブランチを引き継ぐ
+  // ワンライナー（テキストに owner/repo 含む）の場合はそちらを優先する
   const match = text.match(REPO_PATTERN);
+  if (!match?.[1]) {
+    const sessionJob = await prisma.job.findFirst({
+      where: { userId: user.id, threadId: threadTs, status: "COMPLETED" },
+      orderBy: { completedAt: "desc" },
+      select: { repository: true, branch: true },
+    });
+    if (sessionJob) {
+      await showConfirmation(
+        user,
+        sessionJob.repository,
+        sessionJob.branch,
+        text,
+        channelId,
+        threadTs,
+        slackUserId,
+        client,
+      );
+      return;
+    }
+  }
+
+  // ワンライナーパターン: owner/repo が含まれている場合
   if (match?.[1]) {
     const repo = match[1];
     const isValid = await verifyInstallation(user.id, repo);
