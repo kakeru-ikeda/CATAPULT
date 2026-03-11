@@ -1,13 +1,23 @@
 import type { App } from "@slack/bolt";
 import Redis from "ioredis";
 
-import { type CopilotEvent, formatEvent } from "../formatters/slack-blocks.js";
+import type { CopilotEvent } from "../formatters/slack-blocks.js";
+
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + "...";
+}
 
 export class JobStreamRelay {
-  private buffer: CopilotEvent[] = [];
-  private flushTimer: NodeJS.Timeout | null = null;
   private subscriber: Redis | null = null;
   private finished = false;
+  private progressMessageTs: string | null = null;
+  private editTimer: NodeJS.Timeout | null = null;
+
+  // 進行状況インジケーター用の状態
+  private stepCount = 0;
+  private lastTool: string | null = null;
+  private lastAssistantMessage: string | null = null;
 
   constructor(
     private readonly jobId: string,
@@ -17,56 +27,103 @@ export class JobStreamRelay {
   ) {}
 
   async start(): Promise<void> {
+    const result = await this.slack.client.chat.postMessage({
+      channel: this.channelId,
+      thread_ts: this.threadTs,
+      text: "⚙️ 作業中...",
+    });
+    this.progressMessageTs = result.ts ?? null;
+
     this.subscriber = new Redis(process.env["REDIS_URL"]!);
     await this.subscriber.subscribe(`job:${this.jobId}`);
 
     this.subscriber.on("message", (_channel: string, message: string) => {
       try {
         const event = JSON.parse(message) as CopilotEvent;
-        this.buffer.push(event);
-        this.scheduleFlush();
-
-        // done or error イベントで完了処理
-        if (event.type === "done" || event.type === "error") {
-          this.finished = true;
-          // 最終フラッシュを確実に実行
-          if (this.flushTimer) {
-            clearTimeout(this.flushTimer);
-            this.flushTimer = null;
-          }
-          void this.flush().then(() => this.cleanup());
-        }
+        this.handleEvent(event);
       } catch {
         // JSON パースエラーは無視
       }
     });
   }
 
-  private scheduleFlush(): void {
-    if (this.flushTimer || this.finished) return;
-    this.flushTimer = setTimeout(() => {
-      this.flushTimer = null;
-      void this.flush();
-    }, 2000);
+  private handleEvent(event: CopilotEvent): void {
+    if (this.finished) return;
+
+    switch (event.type) {
+      case "tool.execution_start": {
+        const toolName = event.data?.toolName;
+        if (toolName === "bash" || toolName === "shell") {
+          const args = event.data?.arguments as
+            | { description?: string; command?: string }
+            | undefined;
+          const desc =
+            args?.description ?? (args?.command ? truncate(args.command, 100) : undefined);
+          if (desc) this.lastTool = desc;
+        }
+        this.stepCount++;
+        this.scheduleEdit();
+        break;
+      }
+      case "assistant.message": {
+        const content = event.data?.content;
+        if (typeof content === "string" && content.trim()) {
+          this.lastAssistantMessage = truncate(content, 200);
+        }
+        this.scheduleEdit();
+        break;
+      }
+      case "done": {
+        this.finished = true;
+        if (this.editTimer) {
+          clearTimeout(this.editTimer);
+          this.editTimer = null;
+        }
+        const summary = truncate(event.summary ?? "タスクが完了しました", 500);
+        let text = `✅ *完了*: ${summary}`;
+        if (event.prUrl) text += `\n<${event.prUrl}|PR を開く>`;
+        void this.updateProgressMessage(text).then(() => this.cleanup());
+        break;
+      }
+      case "error": {
+        this.finished = true;
+        if (this.editTimer) {
+          clearTimeout(this.editTimer);
+          this.editTimer = null;
+        }
+        void this.updateProgressMessage(
+          `❌ ${truncate(event.message ?? "Unknown error", 500)}`,
+        ).then(() => this.cleanup());
+        break;
+      }
+    }
   }
 
-  private async flush(): Promise<void> {
-    if (this.buffer.length === 0) return;
-    const events = this.buffer.splice(0);
-    const text = events
-      .map(formatEvent)
-      .filter((s) => s.length > 0)
-      .join("\n");
-    if (!text) return;
+  private scheduleEdit(): void {
+    if (this.editTimer || this.finished) return;
+    this.editTimer = setTimeout(() => {
+      this.editTimer = null;
+      void this.updateProgressMessage(this.buildIndicatorText());
+    }, 3000);
+  }
 
+  private buildIndicatorText(): string {
+    let text = `⚙️ 作業中... (ステップ ${this.stepCount})`;
+    if (this.lastTool) text += `\n🔧 \`${this.lastTool}\``;
+    if (this.lastAssistantMessage) text += `\n💬 ${this.lastAssistantMessage}`;
+    return text;
+  }
+
+  private async updateProgressMessage(text: string): Promise<void> {
+    if (!this.progressMessageTs) return;
     try {
-      await this.slack.client.chat.postMessage({
+      await this.slack.client.chat.update({
         channel: this.channelId,
-        thread_ts: this.threadTs,
+        ts: this.progressMessageTs,
         text,
       });
     } catch (err) {
-      console.error(`JobStreamRelay: failed to post message for job ${this.jobId}:`, err);
+      console.error(`JobStreamRelay: failed to update message for job ${this.jobId}:`, err);
     }
   }
 
@@ -80,9 +137,9 @@ export class JobStreamRelay {
   }
 
   stop(): void {
-    if (this.flushTimer) {
-      clearTimeout(this.flushTimer);
-      this.flushTimer = null;
+    if (this.editTimer) {
+      clearTimeout(this.editTimer);
+      this.editTimer = null;
     }
     this.cleanup();
   }

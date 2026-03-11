@@ -1,7 +1,6 @@
 import type { Message } from "discord.js";
 import Redis from "ioredis";
 
-import { formatDiscordEvent, splitIntoChunks } from "../formatters/discord-embeds.js";
 import type { CopilotEvent } from "../formatters/slack-blocks.js";
 
 // send() メソッドを持つチャンネルの最小インターフェース
@@ -9,15 +8,21 @@ interface SendableChannel {
   send(content: string): Promise<Message>;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + "...";
 }
 
 export class DiscordJobStreamRelay {
-  private buffer: CopilotEvent[] = [];
-  private flushTimer: NodeJS.Timeout | null = null;
   private subscriber: Redis | null = null;
   private finished = false;
+  private progressMessage: Message | null = null;
+  private editTimer: NodeJS.Timeout | null = null;
+
+  // 進行状況インジケーター用の状態
+  private stepCount = 0;
+  private lastTool: string | null = null;
+  private lastAssistantMessage: string | null = null;
 
   constructor(
     private readonly jobId: string,
@@ -25,56 +30,94 @@ export class DiscordJobStreamRelay {
   ) {}
 
   async start(): Promise<void> {
+    this.progressMessage = await this.channel.send("⚙️ **作業中...**");
+
     this.subscriber = new Redis(process.env["REDIS_URL"]!);
     await this.subscriber.subscribe(`job:${this.jobId}`);
 
     this.subscriber.on("message", (_channel: string, message: string) => {
       try {
         const event = JSON.parse(message) as CopilotEvent;
-        this.buffer.push(event);
-        this.scheduleFlush();
-
-        if (event.type === "done" || event.type === "error") {
-          this.finished = true;
-          if (this.flushTimer) {
-            clearTimeout(this.flushTimer);
-            this.flushTimer = null;
-          }
-          void this.flush().then(() => this.cleanup());
-        }
+        this.handleEvent(event);
       } catch {
         // JSON パースエラーは無視
       }
     });
   }
 
-  private scheduleFlush(): void {
-    if (this.flushTimer || this.finished) return;
-    this.flushTimer = setTimeout(() => {
-      this.flushTimer = null;
-      void this.flush();
-    }, 2000);
+  private handleEvent(event: CopilotEvent): void {
+    if (this.finished) return;
+
+    switch (event.type) {
+      case "tool.execution_start": {
+        const toolName = event.data?.toolName;
+        if (toolName === "bash" || toolName === "shell") {
+          const args = event.data?.arguments as
+            | { description?: string; command?: string }
+            | undefined;
+          const desc =
+            args?.description ?? (args?.command ? truncate(args.command, 100) : undefined);
+          if (desc) this.lastTool = desc;
+        }
+        this.stepCount++;
+        this.scheduleEdit();
+        break;
+      }
+      case "assistant.message": {
+        const content = event.data?.content;
+        if (typeof content === "string" && content.trim()) {
+          this.lastAssistantMessage = truncate(content, 200);
+        }
+        this.scheduleEdit();
+        break;
+      }
+      case "done": {
+        this.finished = true;
+        if (this.editTimer) {
+          clearTimeout(this.editTimer);
+          this.editTimer = null;
+        }
+        const summary = truncate(event.summary ?? "タスクが完了しました", 500);
+        let text = `✅ **完了**: ${summary}`;
+        if (event.prUrl) text += `\n[PR を開く](${event.prUrl})`;
+        void this.editProgressMessage(text).then(() => this.cleanup());
+        break;
+      }
+      case "error": {
+        this.finished = true;
+        if (this.editTimer) {
+          clearTimeout(this.editTimer);
+          this.editTimer = null;
+        }
+        void this.editProgressMessage(`❌ ${truncate(event.message ?? "Unknown error", 500)}`).then(
+          () => this.cleanup(),
+        );
+        break;
+      }
+    }
   }
 
-  private async flush(): Promise<void> {
-    if (this.buffer.length === 0) return;
-    const events = this.buffer.splice(0);
-    const text = events
-      .map(formatDiscordEvent)
-      .filter((s) => s.length > 0)
-      .join("\n");
-    if (!text) return;
+  private scheduleEdit(): void {
+    if (this.editTimer || this.finished) return;
+    this.editTimer = setTimeout(() => {
+      this.editTimer = null;
+      void this.editProgressMessage(this.buildIndicatorText());
+    }, 3000);
+  }
 
-    const chunks = splitIntoChunks(text);
-    for (const chunk of chunks) {
-      try {
-        await this.channel.send(chunk);
-        if (chunks.length > 1) {
-          await sleep(1000); // レートリミット対策
-        }
-      } catch (err) {
-        console.error(`DiscordJobStreamRelay: failed to send message for job ${this.jobId}:`, err);
-      }
+  private buildIndicatorText(): string {
+    let text = `⚙️ **作業中...** (ステップ ${this.stepCount})`;
+    if (this.lastTool) text += `\n🔧 \`${this.lastTool}\``;
+    if (this.lastAssistantMessage) text += `\n💬 ${this.lastAssistantMessage}`;
+    return text;
+  }
+
+  private async editProgressMessage(content: string): Promise<void> {
+    if (!this.progressMessage) return;
+    try {
+      await this.progressMessage.edit(content);
+    } catch (err) {
+      console.error(`DiscordJobStreamRelay: failed to edit message for job ${this.jobId}:`, err);
     }
   }
 

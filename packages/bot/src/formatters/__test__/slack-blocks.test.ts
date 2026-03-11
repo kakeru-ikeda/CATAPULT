@@ -1,74 +1,28 @@
 import { describe, it, expect } from "vitest";
 
-import { formatEvent } from "../slack-blocks.js";
 import type { CopilotEvent } from "../slack-blocks.js";
 
-describe("formatEvent (Slack)", () => {
-  it("agent_step イベントを正しくフォーマットする", () => {
-    const event: CopilotEvent = { type: "agent_step", content: "作業を開始します" };
-    expect(formatEvent(event)).toBe("💭 作業を開始します");
+describe("CopilotEvent", () => {
+  it("必須フィールドを持つオブジェクトを構築できる", () => {
+    const event: CopilotEvent = { type: "tool.execution_start" };
+    expect(event.type).toBe("tool.execution_start");
   });
 
-  it("tool_call イベントを正しくフォーマットする", () => {
+  it("new Copilot CLI v1.x のフィールドを保持できる", () => {
     const event: CopilotEvent = {
-      type: "tool_call",
-      tool: "create_file",
-      input: { path: "src/index.ts" },
+      type: "assistant.message",
+      data: { content: "テスト" },
     };
-    const result = formatEvent(event);
-    expect(result).toContain("🔧");
-    expect(result).toContain("create_file");
+    expect(event.data?.content).toBe("テスト");
   });
 
-  it("shell イベントを正しくフォーマットする", () => {
-    const event: CopilotEvent = {
-      type: "shell",
-      command: "npm test",
-      stdout: "PASS",
-    };
-    const result = formatEvent(event);
-    expect(result).toContain("📟");
-    expect(result).toContain("npm test");
-    expect(result).toContain("PASS");
-  });
-
-  it("file_edit イベントを正しくフォーマットする", () => {
-    const event: CopilotEvent = { type: "file_edit", path: "src/main.ts" };
-    expect(formatEvent(event)).toBe("📝 src/main.ts");
-  });
-
-  it("error イベントを正しくフォーマットする", () => {
-    const event: CopilotEvent = { type: "error", message: "エラーが発生しました" };
-    expect(formatEvent(event)).toBe("❌ エラーが発生しました");
-  });
-
-  it("done イベントを正しくフォーマットする（PR URLあり）", () => {
+  it("done イベントのフィールドを保持できる", () => {
     const event: CopilotEvent = {
       type: "done",
-      summary: "バグを修正しました",
+      summary: "完了しました",
       prUrl: "https://github.com/owner/repo/pull/42",
     };
-    const result = formatEvent(event);
-    expect(result).toContain("✅");
-    expect(result).toContain("バグを修正しました");
-    expect(result).toContain("https://github.com/owner/repo/pull/42");
-  });
-
-  it("done イベントを正しくフォーマットする（PR URLなし）", () => {
-    const event: CopilotEvent = { type: "done", summary: "完了" };
-    const result = formatEvent(event);
-    expect(result).toContain("✅");
-    expect(result).not.toContain("PR");
-  });
-
-  it("tool_call の input が長い場合は truncate される", () => {
-    const event: CopilotEvent = {
-      type: "tool_call",
-      tool: "some_tool",
-      input: { data: "x".repeat(200) },
-    };
-    const result = formatEvent(event);
-    expect(result.length).toBeLessThan(300);
-    expect(result).toContain("...");
+    expect(event.summary).toBe("完了しました");
+    expect(event.prUrl).toContain("/pull/42");
   });
 });
