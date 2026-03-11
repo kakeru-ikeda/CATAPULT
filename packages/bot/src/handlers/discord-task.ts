@@ -114,7 +114,12 @@ async function submitDiscordJob(
       });
     }
   } catch {
-    // スレッド作成不可の場合はチャンネルにフォールバック
+    // スレッド作成不可（入れ子スレッド等）の場合はチャンネルにフォールバック
+    // threadId を既存スレッドID（message.channelId）で更新してセッション継続を維持する
+    await prisma.job.update({
+      where: { id: job.id },
+      data: { threadId: message.channelId },
+    });
   }
 
   const relay = new DiscordJobStreamRelay(job.id, outputChannel);
