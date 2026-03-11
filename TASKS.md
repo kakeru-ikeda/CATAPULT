@@ -168,3 +168,14 @@
 - [x] bot/discord-task.ts: submitDiscordJob で channelId による前回 COMPLETED ジョブ検索 → parentJobId 設定
 - [x] docs/session-strategy.md 作成
 - [x] docs/database-schema.md 更新
+
+## 着地期待値（DeliverableType）
+
+- [x] prisma/schema.prisma: DeliverableType enum 追加、Job.deliverableType フィールド追加
+- [x] prisma/migrations/20260311105939_add_deliverable_type: マイグレーション SQL 作成・適用
+- [x] packages/worker/src/executor.ts: DeliverableType 型・DELIVERABLE_INSTRUCTIONS 定数追加、buildPrompt に deliverableType 分岐
+- [x] packages/worker/src/job-processor.ts: deliverableType を executor に渡す（Prisma enum → lowercase 変換）
+- [x] packages/bot/src/handlers/task.ts: DeliverableType 型・DELIVERABLE_LABELS 追加、TaskContext に deliverableType 追加、showConfirmation を 4 ボタン形式に変更、submitJob で deliverableType を DB 保存
+- [x] packages/bot/src/handlers/interactive.ts: ブランチ選択モーダルに着地期待値 static_select 追加、select_branch submit で submitJob を直接呼び出し、submit_job アクションハンドラー追加
+- [x] packages/bot/src/handlers/discord-task.ts: DeliverableType 型追加、showDiscordDeliverableSelect 関数追加、ブランチ選択後に DeliverableSelect フローへ、submitDiscordJob に deliverableType 引数追加
+- [x] packages/api/src/routes/jobs.ts: POST /api/jobs に deliverableType パラメータ追加（バリデーション・デフォルト "pr"）

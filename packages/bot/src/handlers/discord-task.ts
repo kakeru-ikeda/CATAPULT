@@ -26,11 +26,21 @@ const jobGuard = new JobGuard();
 // "owner/repo" パターンを検出する正規表現
 const REPO_PATTERN = /([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)/;
 
+type DeliverableType = "pr" | "report" | "commit_only" | "review";
+
+const DELIVERABLE_LABELS: Record<DeliverableType, string> = {
+  pr: "🔀 PR 作成",
+  report: "🔍 調査・報告",
+  commit_only: "📝 コミットのみ",
+  review: "👁 コードレビュー",
+};
+
 async function submitDiscordJob(
   user: User,
   task: string,
   repo: string,
   branch: string,
+  deliverableType: DeliverableType,
   message: Message,
 ): Promise<void> {
   try {
@@ -65,6 +75,14 @@ async function submitDiscordJob(
       channelId: message.channelId,
       threadId: message.id,
       parentJobId: parentJob?.id ?? null,
+      deliverableType:
+        deliverableType === "pr"
+          ? "PR"
+          : deliverableType === "report"
+            ? "REPORT"
+            : deliverableType === "commit_only"
+              ? "COMMIT_ONLY"
+              : "REVIEW",
     },
   });
 
@@ -101,6 +119,76 @@ async function submitDiscordJob(
 
   const relay = new DiscordJobStreamRelay(job.id, outputChannel);
   await relay.start();
+}
+
+export async function showDiscordDeliverableSelect(
+  user: User,
+  task: string,
+  repo: string,
+  branch: string,
+  message: Message,
+  replyMsg: Message,
+): Promise<void> {
+  const select = new StringSelectMenuBuilder()
+    .setCustomId(`deliverable_select:${message.id}`)
+    .setPlaceholder("完了形式を選択...")
+    .addOptions([
+      {
+        label: "🔀 PR 作成",
+        value: "pr",
+        description: "変更してプルリクエストを作成",
+      },
+      {
+        label: "🔍 調査・報告",
+        value: "report",
+        description: "コードを変更せず調査・報告",
+      },
+      {
+        label: "📝 コミットのみ",
+        value: "commit_only",
+        description: "ブランチにコミット。PR なし",
+      },
+      {
+        label: "👁 コードレビュー",
+        value: "review",
+        description: "変更なし、レビュー結果を投稿",
+      },
+    ]);
+
+  const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
+
+  await replyMsg.edit({
+    content: `**${repo}** \`${branch}\` でどの形式で完了しますか？\n**タスク:** ${task}`,
+    components: [row],
+  });
+
+  const collector = replyMsg.createMessageComponentCollector({
+    filter: (i) => i.user.id === message.author.id,
+    time: 2 * 60 * 1000,
+    max: 1,
+  });
+
+  collector.on("collect", (interaction) => {
+    void (async () => {
+      if (!interaction.isStringSelectMenu()) return;
+      await interaction.deferUpdate();
+      const deliverableType = interaction.values[0] as DeliverableType;
+      await replyMsg.edit({
+        content: `✅ ジョブを投入しました: \`${repo}\` - \`${branch}\` (${DELIVERABLE_LABELS[deliverableType]})`,
+        components: [],
+      });
+      await submitDiscordJob(user, task, repo, branch, deliverableType, message);
+    })();
+  });
+
+  collector.on("end", (_, reason) => {
+    if (reason === "time") {
+      void replyMsg.edit({
+        content: "タイムアウトしました。再度メンションしてください。",
+        components: [],
+      });
+    }
+  });
 }
 
 export async function showDiscordConfirmation(
@@ -145,7 +233,7 @@ export async function showDiscordConfirmation(
           content: `✅ ジョブを投入しました: \`${repo}\` - \`${branch}\``,
           components: [],
         });
-        await submitDiscordJob(user, task, repo, branch, message);
+        await submitDiscordJob(user, task, repo, branch, "pr", message);
       } else {
         await confirmMsg.edit({ content: "❌ キャンセルしました。", components: [] });
       }
@@ -203,7 +291,7 @@ async function showDiscordBranchSelect(
       if (!interaction.isStringSelectMenu()) return;
       await interaction.deferUpdate();
       const selectedBranch = interaction.values[0]!;
-      await showDiscordConfirmation(user, task, repo, selectedBranch, message, replyMsg);
+      await showDiscordDeliverableSelect(user, task, repo, selectedBranch, message, replyMsg);
     })();
   });
 
@@ -279,7 +367,10 @@ export async function handleDiscordTask(user: User, text: string, message: Messa
     if (isValid) {
       const branches = await listBranches(user.id, repo);
       const defaultBranch = branches[0]?.name ?? "main";
-      await showDiscordConfirmation(user, text, repo, defaultBranch, message);
+      const replyMsg = await message.reply({
+        content: `🔍 **${repo}** の \`${defaultBranch}\` でどの形式で完了しますか？`,
+      });
+      await showDiscordDeliverableSelect(user, text, repo, defaultBranch, message, replyMsg);
       return;
     }
   }

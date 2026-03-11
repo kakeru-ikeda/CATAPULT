@@ -32,6 +32,14 @@ enum JobStatus {
     CANCELLED
 }
 
+// 着地期待値
+enum DeliverableType {
+    PR
+    REPORT
+    COMMIT_ONLY
+    REVIEW
+}
+
 // ユーザー
 model User {
     id                    String    @id @default(cuid())
@@ -68,23 +76,24 @@ model AccountLink {
 
 // ジョブ
 model Job {
-    id            String    @id @default(cuid())
-    userId        String
-    repository    String // "owner/repo" 形式
-    branch        String
-    prompt        String
-    status        JobStatus @default(PENDING)
-    output        String? // 最終出力
-    resultSummary String? // 完了サマリー
-    prUrl         String? // 作成された PR の URL
-    platform      Platform
-    threadId      String? // Slack/Discord のスレッド ID
-    channelId     String? // Slack/Discord のチャンネル ID
-    parentJobId   String? // 前回ジョブへの参照（軽量セッション）
-    startedAt     DateTime?
-    completedAt   DateTime?
-    createdAt     DateTime  @default(now())
-    updatedAt     DateTime  @updatedAt
+    id              String          @id @default(cuid())
+    userId          String
+    repository      String // "owner/repo" 形式
+    branch          String
+    prompt          String
+    status          JobStatus       @default(PENDING)
+    output          String? // 最終出力
+    resultSummary   String? // 完了サマリー
+    prUrl           String? // 作成された PR の URL
+    platform        Platform
+    threadId        String? // Slack/Discord のスレッド ID
+    channelId       String? // Slack/Discord のチャンネル ID
+    parentJobId     String? // 前回ジョブへの参照（軽量セッション）
+    deliverableType DeliverableType @default(PR)
+    startedAt       DateTime?
+    completedAt     DateTime?
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt
 
     user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
     logs     JobLog[]

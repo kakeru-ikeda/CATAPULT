@@ -16,11 +16,21 @@ const jobGuard = new JobGuard();
 // "owner/repo" パターンを検出する正規表現
 const REPO_PATTERN = /([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)/;
 
+export type DeliverableType = "pr" | "report" | "commit_only" | "review";
+
+export const DELIVERABLE_LABELS: Record<DeliverableType, string> = {
+  pr: "🔀 PR 作成",
+  report: "🔍 調査・報告",
+  commit_only: "📝 コミットのみ",
+  review: "👁 コードレビュー",
+};
+
 export interface TaskContext {
   userId: string;
   repo: string;
   branch: string;
   task: string;
+  deliverableType: DeliverableType;
   channelId: string;
   threadTs: string;
   slackUserId: string;
@@ -68,6 +78,14 @@ export async function submitJob(ctx: TaskContext): Promise<void> {
       channelId: ctx.channelId,
       threadId: ctx.threadTs,
       parentJobId: parentJob?.id ?? null,
+      deliverableType:
+        ctx.deliverableType === "pr"
+          ? "PR"
+          : ctx.deliverableType === "report"
+            ? "REPORT"
+            : ctx.deliverableType === "commit_only"
+              ? "COMMIT_ONLY"
+              : "REVIEW",
     },
   });
 
@@ -96,15 +114,32 @@ export async function showConfirmation(
   slackUserId: string,
   client: WebClient,
 ): Promise<void> {
-  const ctxValue = JSON.stringify({
-    userId: user.id,
-    repo,
-    branch,
-    task,
-    channelId,
-    threadTs,
-    slackUserId,
-  });
+  const ctxBase64 = Buffer.from(
+    JSON.stringify({
+      userId: user.id,
+      repo,
+      branch,
+      task,
+      channelId,
+      threadTs,
+      slackUserId,
+    }),
+  ).toString("base64");
+
+  const deliverableButtons = (
+    [
+      { value: "pr" as DeliverableType, label: "🔀 PR 作成" },
+      { value: "report" as DeliverableType, label: "🔍 調査・報告" },
+      { value: "commit_only" as DeliverableType, label: "📝 コミットのみ" },
+      { value: "review" as DeliverableType, label: "👁 コードレビュー" },
+    ] as const
+  ).map(({ value, label }) => ({
+    type: "button" as const,
+    text: { type: "plain_text" as const, text: label },
+    action_id: "submit_job",
+    // value = base64(ctx):deliverableType:slackUserId
+    value: `${ctxBase64}:${value}:${slackUserId}`,
+  }));
 
   await client.chat.postMessage({
     channel: channelId,
@@ -115,24 +150,17 @@ export async function showConfirmation(
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `*リポジトリ:* \`${repo}\`\n*ブランチ:* \`${branch}\`\n*タスク:* ${task}`,
+          text: `*リポジトリ:* \`${repo}\`\n*ブランチ:* \`${branch}\`\n*タスク:* ${task}\n\nどの形式で完了しますか？`,
         },
       },
       {
         type: "actions",
         elements: [
+          ...deliverableButtons,
           {
-            type: "button",
-            text: { type: "plain_text", text: "✅ 実行する" },
-            style: "primary",
-            action_id: "confirm_job",
-            // value に起票者 ID を含めてボタン本人認証に使用
-            value: `${Buffer.from(ctxValue).toString("base64")}:${slackUserId}`,
-          },
-          {
-            type: "button",
-            text: { type: "plain_text", text: "❌ キャンセル" },
-            style: "danger",
+            type: "button" as const,
+            text: { type: "plain_text" as const, text: "❌ キャンセル" },
+            style: "danger" as const,
             action_id: "cancel_job",
             value: `cancel:${slackUserId}`,
           },

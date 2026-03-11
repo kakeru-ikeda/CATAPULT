@@ -79,16 +79,37 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 
 // ジョブ作成 POST /api/jobs
 router.post("/", authMiddleware, async (req: Request, res: Response) => {
-  const { repository, branch, prompt } = req.body as {
+  const {
+    repository,
+    branch,
+    prompt,
+    deliverableType = "pr",
+  } = req.body as {
     repository?: string;
     branch?: string;
     prompt?: string;
+    deliverableType?: string;
   };
 
   if (!repository || !branch || !prompt) {
     res.status(400).json({ error: "repository, branch, prompt are required" });
     return;
   }
+
+  const validDeliverableTypes = ["pr", "report", "commit_only", "review"];
+  if (!validDeliverableTypes.includes(deliverableType)) {
+    res.status(400).json({ error: "Invalid deliverableType" });
+    return;
+  }
+
+  const dbDeliverableType =
+    deliverableType === "pr"
+      ? ("PR" as const)
+      : deliverableType === "report"
+        ? ("REPORT" as const)
+        : deliverableType === "commit_only"
+          ? ("COMMIT_ONLY" as const)
+          : ("REVIEW" as const);
 
   const job = await prisma.job.create({
     data: {
@@ -98,6 +119,7 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
       prompt,
       status: "PENDING",
       platform: "API",
+      deliverableType: dbDeliverableType,
     },
   });
 

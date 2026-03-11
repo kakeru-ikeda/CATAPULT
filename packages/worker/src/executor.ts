@@ -33,6 +33,27 @@ export interface CopilotEvent {
   prUrl?: string;
 }
 
+export type DeliverableType = "pr" | "report" | "commit_only" | "review";
+
+const DELIVERABLE_INSTRUCTIONS: Record<DeliverableType, string> = {
+  pr: "",
+  report: `## 出力形式: 調査・報告
+コードの変更・コミット・プッシュ・PR作成は行わないでください。
+以下のタスクについて調査し、結果をまとめて出力してください。
+
+`,
+  commit_only: `## 出力形式: コミットのみ
+変更をブランチにコミット・プッシュしてください。
+プルリクエストは作成しないでください。
+
+`,
+  review: `## 出力形式: コードレビュー
+コードを変更・コミット・プッシュしないでください。
+既存のコードをレビューし、改善点・問題点・良い点を整理して出力してください。
+
+`,
+};
+
 export interface ExecuteOptions {
   jobId: string;
   prompt: string;
@@ -42,6 +63,7 @@ export interface ExecuteOptions {
   mcpConfig?: object;
   instructions?: string;
   previousContext?: string; // 前回ジョブのサマリー（軽量セッション）
+  deliverableType?: DeliverableType;
 }
 
 export class CopilotExecutor extends EventEmitter {
@@ -136,7 +158,14 @@ export class CopilotExecutor extends EventEmitter {
     const previousContextSection = options.previousContext
       ? `## 前回の作業サマリー\n${options.previousContext}`
       : "";
-    return [branchInstruction, options.instructions ?? "", previousContextSection, options.prompt]
+    const deliverableInstruction = DELIVERABLE_INSTRUCTIONS[options.deliverableType ?? "pr"];
+    return [
+      deliverableInstruction,
+      branchInstruction,
+      options.instructions ?? "",
+      previousContextSection,
+      options.prompt,
+    ]
       .filter(Boolean)
       .join("\n\n");
   }

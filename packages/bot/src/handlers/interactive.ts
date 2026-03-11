@@ -4,7 +4,7 @@ import Redis from "ioredis";
 
 import { listBranches } from "../services/github-repos.js";
 
-import { showConfirmation, submitJob, type TaskContext } from "./task.js";
+import { showConfirmation, submitJob, type TaskContext, type DeliverableType } from "./task.js";
 
 const prisma = new PrismaClient();
 const redis = new Redis(process.env["REDIS_URL"]!);
@@ -86,13 +86,38 @@ export function registerInteractiveHandlers(app: App): void {
             },
             label: { type: "plain_text", text: "ブランチ" },
           },
+          {
+            type: "input",
+            block_id: "deliverable_block",
+            element: {
+              type: "static_select",
+              action_id: "deliverable_select",
+              initial_option: {
+                text: { type: "plain_text" as const, text: "🔀 PR 作成" },
+                value: "pr",
+              },
+              options: [
+                { text: { type: "plain_text" as const, text: "🔀 PR 作成" }, value: "pr" },
+                { text: { type: "plain_text" as const, text: "🔍 調査・報告" }, value: "report" },
+                {
+                  text: { type: "plain_text" as const, text: "📝 コミットのみ" },
+                  value: "commit_only",
+                },
+                {
+                  text: { type: "plain_text" as const, text: "👁 コードレビュー" },
+                  value: "review",
+                },
+              ],
+            },
+            label: { type: "plain_text", text: "完了形式" },
+          },
         ],
       },
     });
   });
 
   // ブランチ選択モーダル送信
-  app.view("select_branch", async ({ view, client, ack }) => {
+  app.view("select_branch", async ({ view, ack }) => {
     await ack();
 
     interface BranchModalMetadata {
@@ -109,21 +134,71 @@ export function registerInteractiveHandlers(app: App): void {
       view.state.values["branch_block"]?.["branch_select"]?.selected_option?.value;
     if (!branchValue) return;
 
+    const deliverableValue = (view.state.values["deliverable_block"]?.["deliverable_select"]
+      ?.selected_option?.value ?? "pr") as DeliverableType;
+
     const user = await prisma.user.findUniqueOrThrow({ where: { id: metadata.userId } });
 
-    await showConfirmation(
-      user,
-      metadata.repo,
-      branchValue,
-      metadata.task,
-      metadata.channelId,
-      metadata.threadTs,
-      metadata.slackUserId,
-      client,
-    );
+    // モーダルでブランチ＋完了形式を選択済み = 確認完了 → 直接ジョブ投入
+    await submitJob({
+      userId: user.id,
+      repo: metadata.repo,
+      branch: branchValue,
+      task: metadata.task,
+      deliverableType: deliverableValue,
+      channelId: metadata.channelId,
+      threadTs: metadata.threadTs,
+      slackUserId: metadata.slackUserId,
+    });
   });
 
-  // ジョブ実行確認ボタン
+  // ジョブ実行（完了形式ボタン）
+  app.action<BlockAction>("submit_job", async ({ action, body, ack, respond }) => {
+    await ack();
+
+    const operatorId = body.user.id;
+    const value = "value" in action ? action.value : undefined;
+    if (!value) return;
+
+    // value = base64(ctx):deliverableType:slackUserId
+    const parts = value.split(":");
+    const ownerId = parts[parts.length - 1]!;
+    const deliverableType = parts[parts.length - 2] as DeliverableType;
+    const ctxBase64 = parts.slice(0, parts.length - 2).join(":");
+
+    if (ownerId !== operatorId) {
+      await respond({
+        text: "このアクションを実行する権限がありません。",
+        response_type: "ephemeral",
+        replace_original: false,
+      });
+      return;
+    }
+
+    let ctx: Omit<TaskContext, "deliverableType">;
+    try {
+      ctx = JSON.parse(Buffer.from(ctxBase64, "base64").toString("utf8")) as Omit<
+        TaskContext,
+        "deliverableType"
+      >;
+    } catch {
+      await respond({
+        text: "無効なコンテキストです。",
+        response_type: "ephemeral",
+        replace_original: false,
+      });
+      return;
+    }
+
+    await submitJob({ ...ctx, deliverableType });
+
+    await respond({
+      text: `✅ ジョブを投入しました: \`${ctx.repo}\` - \`${ctx.branch}\``,
+      replace_original: true,
+    });
+  });
+
+  // ジョブ実行確認ボタン（下位互換）（下位互換）
   app.action<BlockAction>("confirm_job", async ({ action, body, ack, respond }) => {
     await ack();
 

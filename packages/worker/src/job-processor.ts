@@ -133,6 +133,14 @@ export const worker = new Worker<JobData>(
         mcpConfig,
         instructions,
         previousContext,
+        deliverableType:
+          dbJob.deliverableType === "PR"
+            ? "pr"
+            : dbJob.deliverableType === "REPORT"
+              ? "report"
+              : dbJob.deliverableType === "COMMIT_ONLY"
+                ? "commit_only"
+                : "review",
       });
 
       const prUrl = extractPrUrl(events);
