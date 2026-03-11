@@ -7,9 +7,9 @@ import { extractPrUrl } from "./output-parser.js";
 import { cleanupWorkDir } from "./sandbox.js";
 import { refreshTokenIfNeeded } from "./token-refresher.js";
 
-const prisma = new PrismaClient();
+export const prisma = new PrismaClient();
 // Redis pub/sub 配信用（ioredis インスタンス）
-const redis = new Redis(process.env["REDIS_URL"]!);
+export const redis = new Redis(process.env["REDIS_URL"]!);
 // BullMQ は独自バンドルの ioredis を使うため URL オプションで接続
 const bullmqConnection = { url: process.env["REDIS_URL"]! };
 

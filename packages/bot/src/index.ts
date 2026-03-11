@@ -2,7 +2,7 @@ import { registerDiscordHandlers } from "./handlers/discord-mention.js";
 import { registerInteractiveHandlers } from "./handlers/interactive.js";
 import { handleMention } from "./handlers/mention.js";
 import { registerOptionsHandlers } from "./handlers/options.js";
-import { startDiscord } from "./platforms/discord.js";
+import { discordClient, startDiscord } from "./platforms/discord.js";
 import { slackApp } from "./platforms/slack.js";
 
 if (slackApp) {
@@ -30,3 +30,15 @@ void (async () => {
   await startDiscord();
   console.info("🤖 CATAPULT Discord Bot is running");
 })();
+
+async function shutdown(signal: string): Promise<void> {
+  console.info(`Received ${signal}, shutting down...`);
+  await Promise.allSettled([
+    slackApp ? slackApp.stop() : Promise.resolve(),
+    discordClient.destroy(),
+  ]);
+  process.exit(0);
+}
+
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));

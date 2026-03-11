@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import cron from "node-cron";
 
-import { worker } from "./job-processor.js";
+import { worker, prisma as jobPrisma, redis as jobRedis } from "./job-processor.js";
 import { batchRefreshExpiringTokens } from "./token-refresher.js";
 
 async function waitForDatabase(maxRetries = 10, delayMs = 3000): Promise<void> {
@@ -35,10 +35,21 @@ worker.on("failed", (job, err) => {
 });
 
 // 毎時 0 分に期限切れ間近のトークンを先回りリフレッシュ
-cron.schedule("0 * * * *", () => {
+const cronTask = cron.schedule("0 * * * *", () => {
   batchRefreshExpiringTokens().catch((err: unknown) => {
     console.error("Batch token refresh failed:", err);
   });
 });
 
 console.info("Worker started");
+
+async function shutdown(signal: string): Promise<void> {
+  console.info(`Received ${signal}, shutting down...`);
+  await cronTask.stop();
+  await worker.close();
+  await Promise.all([jobRedis.quit(), jobPrisma.$disconnect()]);
+  process.exit(0);
+}
+
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));

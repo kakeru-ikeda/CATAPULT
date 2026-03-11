@@ -34,6 +34,14 @@ app.use("/api/jobs", jobsRouter);
 app.use("/api/mcp-tools", mcpToolsRouter);
 app.use("/api/instructions", instructionsRouter);
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.info(`🚀 CATAPULT API Server is running on port ${PORT}`);
 });
+
+function shutdown(signal: string): void {
+  console.info(`Received ${signal}, shutting down...`);
+  server.close(() => process.exit(0));
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
