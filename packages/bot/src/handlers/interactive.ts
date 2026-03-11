@@ -294,4 +294,77 @@ export function registerInteractiveHandlers(app: App): void {
       await handleTask(accountLink.user, pendingTask, channelId, threadTs, client);
     });
   });
+
+  // 🛑 停止ボタン：実行中ジョブをキャンセル
+  app.action<BlockAction>("stop_job", async ({ action, body, ack, respond }) => {
+    await ack();
+
+    const operatorId = body.user.id;
+    const value = "value" in action ? action.value : undefined;
+    if (!value) return;
+
+    // value = "${jobId}:${slackUserId}"
+    const lastColon = value.lastIndexOf(":");
+    const ownerId = value.slice(lastColon + 1);
+    const jobId = value.slice(0, lastColon);
+
+    if (ownerId !== operatorId) {
+      await respond({
+        text: "このアクションを実行する権限がありません。",
+        response_type: "ephemeral",
+        replace_original: false,
+      });
+      return;
+    }
+
+    const job = await prisma.job.findUnique({ where: { id: jobId } });
+    if (!job) {
+      await respond({
+        text: "ジョブが見つかりません。",
+        response_type: "ephemeral",
+        replace_original: false,
+      });
+      return;
+    }
+
+    // ジョブのオーナー検証
+    const accountLink = await prisma.accountLink.findUnique({
+      where: { platform_platformUserId: { platform: "SLACK", platformUserId: operatorId } },
+    });
+    if (!accountLink || accountLink.userId !== job.userId) {
+      await respond({
+        text: "このジョブをキャンセルする権限がありません。",
+        response_type: "ephemeral",
+        replace_original: false,
+      });
+      return;
+    }
+
+    if (job.status === "COMPLETED" || job.status === "FAILED" || job.status === "CANCELLED") {
+      await respond({
+        text: "このジョブはすでに終了しています。",
+        response_type: "ephemeral",
+        replace_original: false,
+      });
+      return;
+    }
+
+    if (job.status === "PENDING") {
+      // キューから取り出される前にキャンセル
+      await prisma.job.update({
+        where: { id: jobId },
+        data: { status: "CANCELLED", completedAt: new Date() },
+      });
+      await redis.publish(`job:${jobId}`, JSON.stringify({ type: "cancelled" }));
+    } else if (job.status === "RUNNING") {
+      // Worker プロセスにキャンセル信号を送信（Relay が cancelled イベントを受信してメッセージ更新）
+      await redis.publish(`job:${jobId}:cancel`, "cancel");
+    }
+
+    await respond({
+      text: "🛑 停止リクエストを送信しました。",
+      response_type: "ephemeral",
+      replace_original: false,
+    });
+  });
 }

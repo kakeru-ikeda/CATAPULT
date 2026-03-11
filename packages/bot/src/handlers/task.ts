@@ -100,7 +100,7 @@ export async function submitJob(ctx: TaskContext): Promise<void> {
   });
 
   // JobStreamRelay を起動してリアルタイム進捗を投稿
-  const relay = new JobStreamRelay(job.id, slackApp, ctx.channelId, ctx.threadTs);
+  const relay = new JobStreamRelay(job.id, slackApp, ctx.channelId, ctx.threadTs, ctx.slackUserId);
   await relay.start();
 }
 

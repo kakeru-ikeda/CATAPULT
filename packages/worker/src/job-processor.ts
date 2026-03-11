@@ -60,6 +60,9 @@ export const worker = new Worker<JobData>(
       include: { user: true },
     });
 
+    // キューイング中にキャンセルされた場合はスキップ
+    if (dbJob.status === "CANCELLED") return;
+
     await prisma.job.update({
       where: { id: jobId },
       data: { status: "RUNNING", startedAt: new Date() },
@@ -67,6 +70,15 @@ export const worker = new Worker<JobData>(
 
     const executor = new CopilotExecutor();
     const events: CopilotEvent[] = [];
+    let cancelled = false;
+
+    // キャンセル信号を購読（subscriber インスタンスは subscribe 中は他コマンド不可のため専用接続）
+    const cancelSubscriber = new Redis(process.env["REDIS_URL"]!);
+    await cancelSubscriber.subscribe(`job:${jobId}:cancel`);
+    cancelSubscriber.once("message", () => {
+      cancelled = true;
+      executor.cancel();
+    });
 
     // ノイズの高いストリーミングイベントは Redis 配信をスキップ
     const SKIP_PUBSUB_TYPES = new Set([
@@ -172,6 +184,16 @@ export const worker = new Worker<JobData>(
         },
       });
     } catch (error) {
+      // キャンセルされた場合は CANCELLED ステータスに更新し、リスローしない（BullMQ のリトライ対象外）
+      if (cancelled) {
+        await redis.publish(`job:${jobId}`, JSON.stringify({ type: "cancelled" })).catch(() => {});
+        await prisma.job.update({
+          where: { id: jobId },
+          data: { status: "CANCELLED", completedAt: new Date() },
+        });
+        return;
+      }
+
       // Relay がエラーを検知できるよう error イベントを送信
       const errMsg = error instanceof Error ? error.message : "Unknown error";
       redis
@@ -184,6 +206,10 @@ export const worker = new Worker<JobData>(
       });
       throw error;
     } finally {
+      void cancelSubscriber
+        .unsubscribe(`job:${jobId}:cancel`)
+        .then(() => cancelSubscriber.disconnect())
+        .catch(() => {});
       await cleanupWorkDir(jobId);
     }
   },

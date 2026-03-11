@@ -1,12 +1,15 @@
 import type { Message } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import Redis from "ioredis";
 
 import type { CopilotEvent } from "../formatters/slack-blocks.js";
 
 // send() メソッドを持つチャンネルの最小インターフェース
 interface SendableChannel {
-  send(content: string): Promise<Message>;
+  send(content: string | object): Promise<Message>;
 }
+
+const redis = new Redis(process.env["REDIS_URL"]!);
 
 function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
@@ -27,10 +30,41 @@ export class DiscordJobStreamRelay {
   constructor(
     private readonly jobId: string,
     private readonly channel: SendableChannel,
+    private readonly discordUserId: string,
   ) {}
 
+  private buildStopRow(): ActionRowBuilder<ButtonBuilder> {
+    const button = new ButtonBuilder()
+      .setCustomId(`stop_job:${this.jobId}:${this.discordUserId}`)
+      .setLabel("🛑 停止")
+      .setStyle(ButtonStyle.Danger);
+    return new ActionRowBuilder<ButtonBuilder>().addComponents(button);
+  }
+
   async start(): Promise<void> {
-    this.progressMessage = await this.channel.send("⚙️ **作業中...**");
+    this.progressMessage = await this.channel.send({
+      content: "⚙️ **作業中...**",
+      components: [this.buildStopRow()],
+    });
+
+    // 停止ボタンのインタラクションをこのメッセージ内コレクターで受け付ける
+    if (this.progressMessage && "createMessageComponentCollector" in this.progressMessage) {
+      const collector = (this.progressMessage as Message<true>).createMessageComponentCollector({
+        time: 2 * 60 * 60 * 1000,
+      });
+      collector.on("collect", (interaction) => {
+        void (async () => {
+          if (!interaction.isButton()) return;
+          const parts = interaction.customId.split(":");
+          if (parts[0] !== "stop_job" || parts[2] !== interaction.user.id) {
+            await interaction.reply({ content: "権限がありません。", ephemeral: true });
+            return;
+          }
+          await interaction.deferUpdate();
+          await redis.publish(`job:${this.jobId}:cancel`, "cancel");
+        })();
+      });
+    }
 
     this.subscriber = new Redis(process.env["REDIS_URL"]!);
     await this.subscriber.subscribe(`job:${this.jobId}`);
@@ -94,6 +128,15 @@ export class DiscordJobStreamRelay {
         );
         break;
       }
+      case "cancelled": {
+        this.finished = true;
+        if (this.editTimer) {
+          clearTimeout(this.editTimer);
+          this.editTimer = null;
+        }
+        void this.editProgressMessage("🛑 キャンセルされました").then(() => this.cleanup());
+        break;
+      }
     }
   }
 
@@ -115,7 +158,11 @@ export class DiscordJobStreamRelay {
   private async editProgressMessage(content: string): Promise<void> {
     if (!this.progressMessage) return;
     try {
-      await this.progressMessage.edit(content);
+      // 終了時はボタンを削除、進行中はボタンを維持
+      const editOptions = this.finished
+        ? { content, components: [] }
+        : { content, components: [this.buildStopRow()] };
+      await this.progressMessage.edit(editOptions);
     } catch (err) {
       console.error(`DiscordJobStreamRelay: failed to edit message for job ${this.jobId}:`, err);
     }

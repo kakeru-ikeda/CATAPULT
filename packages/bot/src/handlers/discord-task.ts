@@ -122,7 +122,7 @@ async function submitDiscordJob(
     });
   }
 
-  const relay = new DiscordJobStreamRelay(job.id, outputChannel);
+  const relay = new DiscordJobStreamRelay(job.id, outputChannel, message.author.id);
   await relay.start();
 }
 

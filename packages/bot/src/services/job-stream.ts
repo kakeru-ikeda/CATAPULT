@@ -1,4 +1,5 @@
 import type { App } from "@slack/bolt";
+import type { KnownBlock } from "@slack/types";
 import Redis from "ioredis";
 
 import type { CopilotEvent } from "../formatters/slack-blocks.js";
@@ -24,13 +25,33 @@ export class JobStreamRelay {
     private readonly slack: App,
     private readonly channelId: string,
     private readonly threadTs: string,
+    private readonly slackUserId: string,
   ) {}
+
+  private buildStopButton(): KnownBlock {
+    return {
+      type: "actions",
+      elements: [
+        {
+          type: "button",
+          text: { type: "plain_text", text: "🛑 停止" },
+          style: "danger",
+          action_id: "stop_job",
+          value: `${this.jobId}:${this.slackUserId}`,
+        },
+      ],
+    };
+  }
 
   async start(): Promise<void> {
     const result = await this.slack.client.chat.postMessage({
       channel: this.channelId,
       thread_ts: this.threadTs,
       text: "⚙️ 作業中...",
+      blocks: [
+        { type: "section", text: { type: "mrkdwn", text: "⚙️ 作業中..." } },
+        this.buildStopButton(),
+      ],
     });
     this.progressMessageTs = result.ts ?? null;
 
@@ -96,6 +117,15 @@ export class JobStreamRelay {
         ).then(() => this.cleanup());
         break;
       }
+      case "cancelled": {
+        this.finished = true;
+        if (this.editTimer) {
+          clearTimeout(this.editTimer);
+          this.editTimer = null;
+        }
+        void this.updateProgressMessage("🛑 キャンセルされました").then(() => this.cleanup());
+        break;
+      }
     }
   }
 
@@ -117,11 +147,16 @@ export class JobStreamRelay {
   private async updateProgressMessage(text: string): Promise<void> {
     if (!this.progressMessageTs) return;
     try {
-      await this.slack.client.chat.update({
-        channel: this.channelId,
-        ts: this.progressMessageTs,
-        text,
-      });
+      // 終了済み（完了・エラー・キャンセル）の場合はボタンを削除、進行中はボタンを維持
+      const updateOptions = this.finished
+        ? { channel: this.channelId, ts: this.progressMessageTs, text, blocks: [] }
+        : {
+            channel: this.channelId,
+            ts: this.progressMessageTs,
+            text,
+            blocks: [{ type: "section", text: { type: "mrkdwn", text } }, this.buildStopButton()],
+          };
+      await this.slack.client.chat.update(updateOptions);
     } catch (err) {
       console.error(`JobStreamRelay: failed to update message for job ${this.jobId}:`, err);
     }

@@ -71,6 +71,8 @@
 - [x] JobStreamRelay (Redis Pub/Sub → スレッド投稿)
 - [x] バッファリング (2秒間隔)
 - [x] イベントフォーマット (agent_step→💭, tool_call→🔧, shell→📟, file_edit→📝, error→❌, done→✅)
+- [x] 🛑 停止ボタン (インラインボタン → Redis キャンセル信号)
+- [x] cancelled イベント処理
 
 ## Phase 4: Discord Bot 実装
 
@@ -87,6 +89,8 @@
 - [x] MessageComponentCollector (タイムアウト: 2分)
 - [x] JobStreamRelay (Redis Pub/Sub → スレッド投稿)
 - [x] ストリーミング投稿 (2000文字チャンク分割)
+- [x] 🛑 停止ボタン (ButtonComponent → Redis キャンセル信号)
+- [x] cancelled イベント処理
 
 ## Phase 5: ReactAdmin 管理画面
 

@@ -153,6 +153,11 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
     data: { status: "CANCELLED", completedAt: new Date() },
   });
 
+  // RUNNING 中のジョブは Worker プロセスにキャンセル信号を送信
+  if (job.status === "RUNNING") {
+    await redis.publish(`job:${job.id}:cancel`, "cancel");
+  }
+
   await auditLog(req.user!.id, "job.cancel", `job:${job.id}`, { repository: job.repository });
 
   res.json({ id: job.id });
