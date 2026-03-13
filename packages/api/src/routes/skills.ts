@@ -136,9 +136,9 @@ router.post(
   },
 );
 
-// グローバルスキル一覧 GET /api/skills/global (管理者)
+// グローバルスキル一覧 GET /api/skills/global (認証済みユーザー)
 // NOTE: /:id より先に登録することで "global" を /:id に奪われないようにする
-router.get("/global", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
+router.get("/global", authMiddleware, async (req: Request, res: Response) => {
   const start = Number(req.query["_start"] ?? 0);
   const end = Number(req.query["_end"] ?? 10);
   const sort = (req.query["_sort"] as string | undefined) ?? "createdAt";
@@ -245,8 +245,8 @@ router.post(
   },
 );
 
-// グローバルスキル詳細 GET /api/skills/global/:id (管理者)
-router.get("/global/:id", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
+// グローバルスキル詳細 GET /api/skills/global/:id (認証済みユーザー)
+router.get("/global/:id", authMiddleware, async (req: Request, res: Response) => {
   const skill = await prisma.skill.findUnique({
     where: { id: req.params["id"] as string },
   });

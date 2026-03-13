@@ -46,7 +46,8 @@ async function getActiveInstructions(userId: string): Promise<string | undefined
       isActive: true,
       OR: [{ isGlobal: true }, { userId }],
     },
-    orderBy: { createdAt: "asc" },
+    // グローバルを先に、ユーザー定義を後に並べることでユーザー定義が優先される
+    orderBy: [{ isGlobal: "desc" }, { createdAt: "asc" }],
   });
 
   if (instructions.length === 0) return undefined;

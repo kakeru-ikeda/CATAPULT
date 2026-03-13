@@ -11,9 +11,9 @@ const router: Router = createRouter();
 
 // ─── グローバルインストラクション (管理者) ────────────────────────────────────
 
-// グローバルインストラクション一覧 GET /api/instructions/global (管理者)
+// グローバルインストラクション一覧 GET /api/instructions/global (認証済みユーザー)
 // NOTE: /:id より先に登録することで "global" を /:id に奪われないようにする
-router.get("/global", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
+router.get("/global", authMiddleware, async (req: Request, res: Response) => {
   const start = Number(req.query["_start"] ?? 0);
   const end = Number(req.query["_end"] ?? 10);
   const sort = (req.query["_sort"] as string | undefined) ?? "createdAt";
@@ -57,8 +57,8 @@ router.post("/global", authMiddleware, adminMiddleware, async (req: Request, res
   res.status(201).json(instruction);
 });
 
-// グローバルインストラクション詳細 GET /api/instructions/global/:id (管理者)
-router.get("/global/:id", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
+// グローバルインストラクション詳細 GET /api/instructions/global/:id (認証済みユーザー)
+router.get("/global/:id", authMiddleware, async (req: Request, res: Response) => {
   const instruction = await prisma.instruction.findUnique({
     where: { id: req.params["id"] as string },
   });

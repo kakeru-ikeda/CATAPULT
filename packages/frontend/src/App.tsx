@@ -16,6 +16,12 @@ import { AuthCallback } from "./pages/AuthCallback.js";
 import { LoginPage } from "./pages/LoginPage.js";
 import { AccountLink } from "./pages/user/AccountLink.js";
 import { Dashboard } from "./pages/user/Dashboard.js";
+import {
+  GlobalInstructionsView,
+  GlobalInstructionShow,
+} from "./pages/user/GlobalInstructionsView.js";
+import { GlobalMcpToolsView, GlobalMcpToolShow } from "./pages/user/GlobalMcpToolsView.js";
+import { GlobalSkillsView, GlobalSkillShow } from "./pages/user/GlobalSkillsView.js";
 import { McpToolSettings } from "./pages/user/McpToolSettings.js";
 import { MyInstructions } from "./pages/user/MyInstructions.js";
 import { MyJobs } from "./pages/user/MyJobs.js";
@@ -49,6 +55,18 @@ export const App = () => (
         <Resource name="instructions" list={MyInstructions} />
         <Resource name="mcp-tools" list={McpToolSettings} />
         <Resource name="skills" list={MySkills} edit={MySkillEdit} />
+        {/* グローバル設定の閲覧（一般ユーザー） */}
+        {permissions !== "ADMIN" && (
+          <>
+            <Resource
+              name="instructions/global"
+              list={GlobalInstructionsView}
+              show={GlobalInstructionShow}
+            />
+            <Resource name="mcp-tools/global" list={GlobalMcpToolsView} show={GlobalMcpToolShow} />
+            <Resource name="skills/global" list={GlobalSkillsView} show={GlobalSkillShow} />
+          </>
+        )}
         <CustomRoutes noLayout>
           <Route path="/auth/callback" element={<AuthCallback />} />
         </CustomRoutes>
