@@ -1,7 +1,6 @@
 import {
   BooleanField,
   BooleanInput,
-  Create,
   Datagrid,
   DeleteButton,
   Edit,
@@ -12,7 +11,10 @@ import {
   TextField,
   TextInput,
   Toolbar,
+  TopToolbar,
 } from "react-admin";
+
+import { SkillUploadButton } from "../../components/SkillUploadButton.js";
 
 const SkillFormToolbar = () => (
   <Toolbar>
@@ -20,42 +22,38 @@ const SkillFormToolbar = () => (
   </Toolbar>
 );
 
+const MySkillListActions = () => (
+  <TopToolbar>
+    <SkillUploadButton endpoint="/api/skills/upload" />
+  </TopToolbar>
+);
+
+const MySkillEmpty = () => (
+  <div style={{ padding: "2em", textAlign: "center" }}>
+    <p>スキルがまだありません。ZIP ファイルからアップロードしてください。</p>
+    <SkillUploadButton endpoint="/api/skills/upload" />
+  </div>
+);
+
 export const MySkills = () => (
-  <>
-    <List>
-      <Datagrid rowClick="edit">
-        <TextField source="name" label="スキル名" />
-        <TextField source="displayName" label="表示名" />
-        <TextField source="description" label="説明" />
-        <BooleanField source="enabled" label="有効" />
-        <EditButton />
-        <DeleteButton />
-      </Datagrid>
-    </List>
-    <Create>
-      <SimpleForm toolbar={<SkillFormToolbar />} defaultValues={{ scope: "USER" }}>
-        <TextInput source="name" label="スキル名（小文字ハイフン形式）" required />
-        <TextInput source="displayName" label="表示名" required />
-        <TextInput
-          source="description"
-          label="説明（Copilot の自律選択に使用）"
-          multiline
-          required
-        />
-        <TextInput source="content" label="SKILL.md 全文" multiline required />
-        <BooleanInput source="enabled" label="有効" defaultValue={true} />
-      </SimpleForm>
-    </Create>
-  </>
+  <List actions={<MySkillListActions />} empty={<MySkillEmpty />}>
+    <Datagrid rowClick="edit">
+      <TextField source="name" label="スキル名" />
+      <TextField source="displayName" label="表示名" />
+      <TextField source="description" label="説明（Copilot 自律選択用）" />
+      <BooleanField source="enabled" label="有効" />
+      <EditButton />
+      <DeleteButton />
+    </Datagrid>
+  </List>
 );
 
 export const MySkillEdit = () => (
   <Edit>
     <SimpleForm toolbar={<SkillFormToolbar />}>
-      <TextInput source="name" label="スキル名（小文字ハイフン形式）" required />
+      {/* name はファイルシステム名のため変更不可 */}
+      <TextInput source="name" label="スキル名" disabled />
       <TextInput source="displayName" label="表示名" required />
-      <TextInput source="description" label="説明（Copilot の自律選択に使用）" multiline required />
-      <TextInput source="content" label="SKILL.md 全文" multiline required />
       <BooleanInput source="enabled" label="有効" />
     </SimpleForm>
   </Edit>

@@ -1,33 +1,10 @@
-import { createDecipheriv } from "crypto";
-
-import { PrismaClient } from "@prisma/client";
 import Redis from "ioredis";
 
-const prisma = new PrismaClient();
+import { refreshTokenIfNeeded } from "./token-refresher.js";
+
 const redis = new Redis(process.env["REDIS_URL"]!);
 
 const CACHE_TTL = 300; // 5分キャッシュ
-
-function getKey(): Buffer {
-  const keyHex = process.env["TOKEN_ENCRYPTION_KEY"];
-  if (!keyHex) throw new Error("TOKEN_ENCRYPTION_KEY is not set");
-  const key = Buffer.from(keyHex, "hex");
-  if (key.length !== 32) throw new Error("TOKEN_ENCRYPTION_KEY must be 64 hex characters");
-  return key;
-}
-
-function decrypt(ciphertext: string): string {
-  const key = getKey();
-  const parts = ciphertext.split(":");
-  if (parts.length !== 3) throw new Error("Invalid ciphertext format");
-  const [ivB64, authTagB64, encryptedB64] = parts as [string, string, string];
-  const iv = Buffer.from(ivB64, "base64");
-  const authTag = Buffer.from(authTagB64, "base64");
-  const encrypted = Buffer.from(encryptedB64, "base64");
-  const decipher = createDecipheriv("aes-256-gcm", key, iv);
-  decipher.setAuthTag(authTag);
-  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
-}
 
 export interface GithubRepo {
   full_name: string;
@@ -39,13 +16,8 @@ export interface GithubBranch {
   name: string;
 }
 
-async function getAccessToken(userId: string): Promise<string> {
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  return decrypt(user.githubToken);
-}
-
 async function fetchGitHub<T>(userId: string, path: string): Promise<T> {
-  const token = await getAccessToken(userId);
+  const token = await refreshTokenIfNeeded(userId);
   const response = await fetch(`https://api.github.com${path}`, {
     headers: {
       Authorization: `token ${token}`,

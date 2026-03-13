@@ -1,7 +1,6 @@
 import {
   BooleanField,
   BooleanInput,
-  Create,
   Datagrid,
   DeleteButton,
   Edit,
@@ -12,7 +11,10 @@ import {
   TextField,
   TextInput,
   Toolbar,
+  TopToolbar,
 } from "react-admin";
+
+import { SkillUploadButton } from "../../components/SkillUploadButton.js";
 
 const SkillFormToolbar = () => (
   <Toolbar>
@@ -20,44 +22,39 @@ const SkillFormToolbar = () => (
   </Toolbar>
 );
 
+const GlobalSkillListActions = () => (
+  <TopToolbar>
+    <SkillUploadButton endpoint="/api/skills/global/upload" />
+  </TopToolbar>
+);
+
+const GlobalSkillEmpty = () => (
+  <div style={{ padding: "2em", textAlign: "center" }}>
+    <p>グローバルスキルがまだありません。ZIP ファイルからアップロードしてください。</p>
+    <SkillUploadButton endpoint="/api/skills/global/upload" />
+  </div>
+);
+
 export const GlobalSkillConfig = () => (
-  <>
-    <List resource="skills/global">
-      <Datagrid rowClick="edit">
-        <TextField source="name" label="スキル名" />
-        <TextField source="displayName" label="表示名" />
-        <TextField source="description" label="説明" />
-        <TextField source="version" label="バージョン" />
-        <BooleanField source="enabled" label="有効" />
-        <EditButton resource="skills/global" />
-        <DeleteButton resource="skills/global" />
-      </Datagrid>
-    </List>
-    <Create resource="skills/global">
-      <SimpleForm toolbar={<SkillFormToolbar />} defaultValues={{ scope: "GLOBAL" }}>
-        <TextInput source="name" label="スキル名（小文字ハイフン形式）" required />
-        <TextInput source="displayName" label="表示名" required />
-        <TextInput
-          source="description"
-          label="説明（Copilot の自律選択に使用）"
-          multiline
-          required
-        />
-        <TextInput source="content" label="SKILL.md 全文" multiline required />
-        <TextInput source="version" label="バージョン" defaultValue="1.0.0" />
-        <BooleanInput source="enabled" label="有効" defaultValue={true} />
-      </SimpleForm>
-    </Create>
-  </>
+  <List resource="skills/global" actions={<GlobalSkillListActions />} empty={<GlobalSkillEmpty />}>
+    <Datagrid rowClick="edit">
+      <TextField source="name" label="スキル名" />
+      <TextField source="displayName" label="表示名" />
+      <TextField source="description" label="説明（Copilot 自律選択用）" />
+      <TextField source="version" label="バージョン" />
+      <BooleanField source="enabled" label="有効" />
+      <EditButton resource="skills/global" />
+      <DeleteButton resource="skills/global" />
+    </Datagrid>
+  </List>
 );
 
 export const GlobalSkillEdit = () => (
   <Edit resource="skills/global">
     <SimpleForm toolbar={<SkillFormToolbar />}>
-      <TextInput source="name" label="スキル名（小文字ハイフン形式）" required />
+      {/* name はファイルシステム名のため変更不可 */}
+      <TextInput source="name" label="スキル名" disabled />
       <TextInput source="displayName" label="表示名" required />
-      <TextInput source="description" label="説明（Copilot の自律選択に使用）" multiline required />
-      <TextInput source="content" label="SKILL.md 全文" multiline required />
       <TextInput source="version" label="バージョン" />
       <BooleanInput source="enabled" label="有効" />
     </SimpleForm>

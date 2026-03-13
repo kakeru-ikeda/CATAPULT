@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import type { Router, Request, Response } from "express";
 import { Router as createRouter } from "express";
+import JSZip from "jszip";
+import multer from "multer";
 
 import { auditLog } from "../middleware/audit-log.js";
 import { authMiddleware, adminMiddleware } from "../middleware/auth.js";
@@ -11,6 +13,19 @@ const router: Router = createRouter();
 
 /** スキル名バリデーション用正規表現（パストラバーサル対策） */
 const VALID_SKILL_NAME = /^[a-z0-9][a-z0-9-]{0,62}$/;
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+});
+
+/** SKILL.md の frontmatter から name / description を抽出 */
+function parseSkillMd(content: string): { name: string; description: string } | null {
+  const nameMatch = content.match(/^name:\s*(.+)$/m);
+  const descMatch = content.match(/^description:\s*(.+)$/m);
+  if (!nameMatch?.[1] || !descMatch?.[1]) return null;
+  return { name: nameMatch[1].trim(), description: descMatch[1].trim() };
+}
 
 // ─── 個人スキル (scope=USER) ────────────────────────────────────────────────
 
@@ -70,6 +85,57 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
   res.status(201).json(skill);
 });
 
+// 個人スキル ZIP アップロード POST /api/skills/upload
+// NOTE: /:id より先に登録
+router.post(
+  "/upload",
+  authMiddleware,
+  upload.single("file"),
+  async (req: Request, res: Response) => {
+    if (!req.file) {
+      res.status(400).json({ error: "ファイルが必要です" });
+      return;
+    }
+
+    const zip = await JSZip.loadAsync(req.file.buffer).catch(() => null);
+    if (!zip) {
+      res.status(400).json({ error: "ZIP ファイルの解析に失敗しました" });
+      return;
+    }
+
+    const skillMdFile = zip.file(/SKILL\.md$/i)[0] ?? null;
+    if (!skillMdFile) {
+      res.status(400).json({ error: "ZIP 内に SKILL.md が見つかりません" });
+      return;
+    }
+
+    const content = await skillMdFile.async("string");
+    const parsed = parseSkillMd(content);
+    if (!parsed) {
+      res.status(400).json({ error: "SKILL.md に name または description が含まれていません" });
+      return;
+    }
+    if (!VALID_SKILL_NAME.test(parsed.name)) {
+      res.status(400).json({ error: "SKILL.md の name は小文字英数字とハイフンのみ使用できます" });
+      return;
+    }
+
+    const skill = await prisma.skill.create({
+      data: {
+        name: parsed.name,
+        displayName: parsed.name,
+        description: parsed.description,
+        content,
+        scope: "USER",
+        ownerId: req.user!.id,
+        sourceZip: req.file.buffer,
+      },
+    });
+    await auditLog(req.user!.id, "skill.upload", `skill:${skill.id}`, { name: parsed.name });
+    res.status(201).json(skill);
+  },
+);
+
 // グローバルスキル一覧 GET /api/skills/global (管理者)
 // NOTE: /:id より先に登録することで "global" を /:id に奪われないようにする
 router.get("/global", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
@@ -124,6 +190,60 @@ router.post("/global", authMiddleware, adminMiddleware, async (req: Request, res
   await auditLog(req.user!.id, "skill.create.global", `skill:${skill.id}`, { name });
   res.status(201).json(skill);
 });
+
+// グローバルスキル ZIP アップロード POST /api/skills/global/upload (管理者)
+// NOTE: /global/:id より先に登録
+router.post(
+  "/global/upload",
+  authMiddleware,
+  adminMiddleware,
+  upload.single("file"),
+  async (req: Request, res: Response) => {
+    if (!req.file) {
+      res.status(400).json({ error: "ファイルが必要です" });
+      return;
+    }
+
+    const zip = await JSZip.loadAsync(req.file.buffer).catch(() => null);
+    if (!zip) {
+      res.status(400).json({ error: "ZIP ファイルの解析に失敗しました" });
+      return;
+    }
+
+    const skillMdFile = zip.file(/SKILL\.md$/i)[0] ?? null;
+    if (!skillMdFile) {
+      res.status(400).json({ error: "ZIP 内に SKILL.md が見つかりません" });
+      return;
+    }
+
+    const content = await skillMdFile.async("string");
+    const parsed = parseSkillMd(content);
+    if (!parsed) {
+      res.status(400).json({ error: "SKILL.md に name または description が含まれていません" });
+      return;
+    }
+    if (!VALID_SKILL_NAME.test(parsed.name)) {
+      res.status(400).json({ error: "SKILL.md の name は小文字英数字とハイフンのみ使用できます" });
+      return;
+    }
+
+    const skill = await prisma.skill.create({
+      data: {
+        name: parsed.name,
+        displayName: parsed.name,
+        description: parsed.description,
+        content,
+        scope: "GLOBAL",
+        ownerId: null,
+        sourceZip: req.file.buffer,
+      },
+    });
+    await auditLog(req.user!.id, "skill.upload.global", `skill:${skill.id}`, {
+      name: parsed.name,
+    });
+    res.status(201).json(skill);
+  },
+);
 
 // グローバルスキル詳細 GET /api/skills/global/:id (管理者)
 router.get("/global/:id", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {

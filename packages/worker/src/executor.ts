@@ -90,7 +90,7 @@ export class CopilotExecutor extends EventEmitter {
       await this.writeMcpConfig(options.mcpConfig, homeDir);
     }
 
-    const skillsDir = await deploySkills(options.userId, homeDir);
+    await deploySkills(options.userId, homeDir);
 
     const fullPrompt = this.buildPrompt(options);
 
@@ -102,7 +102,6 @@ export class CopilotExecutor extends EventEmitter {
         "--output-format",
         "json",
         ...CopilotExecutor.DENIED_TOOLS.flatMap((tool) => ["--deny-tool", tool]),
-        ...(skillsDir ? ["--skills-dir", skillsDir] : []),
         "-p",
         fullPrompt,
       ],
