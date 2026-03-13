@@ -1,6 +1,5 @@
 import {
   BooleanField,
-  BooleanInput,
   Create,
   Datagrid,
   DeleteButton,
@@ -10,15 +9,23 @@ import {
   SaveButton,
   SimpleForm,
   TextField,
-  TextInput,
   Toolbar,
 } from "react-admin";
+
+import { McpToolEditor } from "../../components/McpToolEditor.js";
 
 const McpToolFormToolbar = () => (
   <Toolbar>
     <SaveButton />
   </Toolbar>
 );
+
+const validateMcpTool = (values: Record<string, unknown>) => {
+  const errors: Record<string, string> = {};
+  if (!values["name"]) errors["name"] = "ツール名は必須です";
+  if (!values["endpoint"]) errors["endpoint"] = "エンドポイント URL は必須です";
+  return errors;
+};
 
 export const McpToolConfig = () => (
   <>
@@ -33,12 +40,8 @@ export const McpToolConfig = () => (
       </Datagrid>
     </List>
     <Create resource="mcp-tools/global">
-      <SimpleForm toolbar={<McpToolFormToolbar />}>
-        <TextInput source="name" label="ツール名" required />
-        <TextInput source="description" label="説明" />
-        <TextInput source="endpoint" label="エンドポイント URL" required />
-        <TextInput source="method" label="HTTP メソッド" defaultValue="POST" />
-        <BooleanInput source="enabled" label="有効" defaultValue={true} />
+      <SimpleForm toolbar={<McpToolFormToolbar />} validate={validateMcpTool}>
+        <McpToolEditor />
       </SimpleForm>
     </Create>
   </>
@@ -46,12 +49,8 @@ export const McpToolConfig = () => (
 
 export const McpToolGlobalEdit = () => (
   <Edit resource="mcp-tools/global">
-    <SimpleForm toolbar={<McpToolFormToolbar />}>
-      <TextInput source="name" label="ツール名" />
-      <TextInput source="description" label="説明" />
-      <TextInput source="endpoint" label="エンドポイント URL" />
-      <TextInput source="method" label="HTTP メソッド" />
-      <BooleanInput source="enabled" label="有効" />
+    <SimpleForm toolbar={<McpToolFormToolbar />} validate={validateMcpTool}>
+      <McpToolEditor />
     </SimpleForm>
   </Edit>
 );
