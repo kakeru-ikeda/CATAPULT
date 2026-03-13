@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import type { App, BlockAction, StaticSelectAction } from "@slack/bolt";
 import Redis from "ioredis";
 
-import { listBranches } from "../services/github-repos.js";
+import { listBranches, recordRecentBranch, recordRecentRepo } from "../services/github-repos.js";
 
 import { showConfirmation, submitJob, type TaskContext, type DeliverableType } from "./task.js";
 
@@ -49,6 +49,7 @@ export function registerInteractiveHandlers(app: App): void {
     });
     if (!accountLink) return;
 
+    await recordRecentRepo(accountLink.user.id, repo);
     const branches = await listBranches(accountLink.user.id, repo);
 
     // ブランチ選択モーダルを開く
@@ -133,6 +134,8 @@ export function registerInteractiveHandlers(app: App): void {
     const branchValue =
       view.state.values["branch_block"]?.["branch_select"]?.selected_option?.value;
     if (!branchValue) return;
+
+    await recordRecentBranch(metadata.userId, metadata.repo, branchValue);
 
     const deliverableValue = (view.state.values["deliverable_block"]?.["deliverable_select"]
       ?.selected_option?.value ?? "pr") as DeliverableType;

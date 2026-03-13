@@ -14,6 +14,8 @@ import { DiscordJobStreamRelay } from "../services/discord-job-stream.js";
 import {
   listBranches,
   listInstallationRepos,
+  recordRecentBranch,
+  recordRecentRepo,
   verifyInstallation,
 } from "../services/github-repos.js";
 import { JobGuard, JobLimitError } from "../services/job-guard.js";
@@ -296,6 +298,7 @@ async function showDiscordBranchSelect(
       if (!interaction.isStringSelectMenu()) return;
       await interaction.deferUpdate();
       const selectedBranch = interaction.values[0]!;
+      await recordRecentBranch(user.id, repo, selectedBranch);
       await showDiscordDeliverableSelect(user, task, repo, selectedBranch, message, replyMsg);
     })();
   });
@@ -349,6 +352,7 @@ async function showDiscordRepoSelect(user: User, task: string, message: Message)
       if (!interaction.isStringSelectMenu()) return;
       await interaction.deferUpdate();
       const selectedRepo = interaction.values[0]!;
+      await recordRecentRepo(user.id, selectedRepo);
       await showDiscordBranchSelect(user, task, selectedRepo, message, replyMsg);
     })();
   });
