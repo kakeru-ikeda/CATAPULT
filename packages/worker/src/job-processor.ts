@@ -42,7 +42,10 @@ async function getMcpConfig(userId: string): Promise<object | undefined> {
 
 async function getActiveInstructions(userId: string): Promise<string | undefined> {
   const instructions = await prisma.instruction.findMany({
-    where: { userId, isActive: true },
+    where: {
+      isActive: true,
+      OR: [{ isGlobal: true }, { userId }],
+    },
     orderBy: { createdAt: "asc" },
   });
 

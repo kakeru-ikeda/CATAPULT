@@ -131,6 +131,10 @@
   - [x] 作成
   - [x] 更新
   - [x] 削除
+- [x] グローバル/個人 インストラクション管理 (isGlobal フラグ)
+  - [x] グローバルインストラクション管理 API (管理者専用)
+  - [x] Worker: グローバル + 個人インストラクションを統合してプロンプト注入
+  - [x] 管理画面: GlobalInstructionConfig ページ追加
 - [x] インストラクション → プロンプト結合 (isActive: true のみ)
 - [x] ReactAdmin 設定画面 (McpToolConfig, McpToolSettings, MyInstructions)
 

@@ -3,6 +3,10 @@ import { Route } from "react-router-dom";
 
 import { authProvider } from "./authProvider.js";
 import { dataProvider } from "./dataProvider.js";
+import {
+  GlobalInstructionConfig,
+  GlobalInstructionEdit,
+} from "./pages/admin/GlobalInstructionConfig.js";
 import { GlobalSkillConfig, GlobalSkillEdit } from "./pages/admin/GlobalSkillConfig.js";
 import { JobList as AdminJobList, JobShow } from "./pages/admin/JobList.js";
 import { McpToolConfig } from "./pages/admin/McpToolConfig.js";
@@ -33,6 +37,11 @@ export const App = () => (
             <Resource name="jobs/all" list={AdminJobList} show={JobShow} />
             <Resource name="mcp-tools/global" list={McpToolConfig} />
             <Resource name="skills/global" list={GlobalSkillConfig} edit={GlobalSkillEdit} />
+            <Resource
+              name="instructions/global"
+              list={GlobalInstructionConfig}
+              edit={GlobalInstructionEdit}
+            />
           </>
         )}
         {/* 利用者モード */}
