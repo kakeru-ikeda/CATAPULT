@@ -78,11 +78,13 @@ export class CopilotExecutor extends EventEmitter {
     const workDir = `/tmp/copilot-jobs/${options.jobId}/workspace`;
     mkdirSync(workDir, { recursive: true });
 
-    // git clone (トークンをURLに埋め込まず、git credential helper を使用)
-    const repoUrl = `https://x-access-token:${options.githubToken}@github.com/${options.repository}.git`;
-    await execAsync(`git clone --depth=1 --branch=${options.branch} ${repoUrl} .`, {
-      cwd: workDir,
-    });
+    // git clone (リポジトリが指定されている場合のみ)
+    if (options.repository) {
+      const repoUrl = `https://x-access-token:${options.githubToken}@github.com/${options.repository}.git`;
+      await execAsync(`git clone --depth=1 --branch=${options.branch} ${repoUrl} .`, {
+        cwd: workDir,
+      });
+    }
 
     const homeDir = `/tmp/copilot-jobs/${options.jobId}/home`;
 
@@ -153,12 +155,14 @@ export class CopilotExecutor extends EventEmitter {
 
   private buildPrompt(options: ExecuteOptions): string {
     const jobShortId = options.jobId.slice(-8);
-    const branchInstruction = `
+    const branchInstruction = options.repository
+      ? `
 ## 重要: ブランチ名の形式
 作業ブランチを作成する際は、必ず以下の形式を使用してください:
   copilot/job-${jobShortId}/<機能名>
 例: copilot/job-${jobShortId}/fix-login-bug
-`;
+`
+      : "";
     const previousContextSection = options.previousContext
       ? `## 前回の作業サマリー\n${options.previousContext}`
       : "";

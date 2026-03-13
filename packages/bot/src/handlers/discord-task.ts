@@ -105,7 +105,7 @@ async function submitDiscordJob(
   try {
     if (replyMsg.inGuild()) {
       const thread = await replyMsg.startThread({
-        name: `ジョブ進捗 - ${repo}`,
+        name: repo ? `ジョブ進捗 - ${repo}` : "ジョブ進捗 - チャットエージェント",
         autoArchiveDuration: 60,
       });
       outputChannel = thread as unknown as SendableChannel;
@@ -165,7 +165,10 @@ export async function showDiscordDeliverableSelect(
   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
 
   await replyMsg.edit({
-    content: `**${repo}** \`${branch}\` でどの形式で完了しますか？\n**タスク:** ${task}`,
+    content:
+      repo === ""
+        ? `💬 **チャットエージェントモード** でどの形式で完了しますか？\n**タスク:** ${task}`
+        : `**${repo}** \`${branch}\` でどの形式で完了しますか？\n**タスク:** ${task}`,
     components: [row],
   });
 
@@ -181,7 +184,10 @@ export async function showDiscordDeliverableSelect(
       await interaction.deferUpdate();
       const deliverableType = interaction.values[0] as DeliverableType;
       await replyMsg.edit({
-        content: `✅ ジョブを投入しました: \`${repo}\` - \`${branch}\` (${DELIVERABLE_LABELS[deliverableType]})`,
+        content:
+          repo === ""
+            ? `✅ ジョブを投入しました: 💬 チャットエージェントモード (${DELIVERABLE_LABELS[deliverableType]})`
+            : `✅ ジョブを投入しました: \`${repo}\` - \`${branch}\` (${DELIVERABLE_LABELS[deliverableType]})`,
         components: [],
       });
       await submitDiscordJob(user, task, repo, branch, deliverableType, message);
@@ -315,24 +321,23 @@ async function showDiscordBranchSelect(
 
 async function showDiscordRepoSelect(user: User, task: string, message: Message): Promise<void> {
   const repos = await listInstallationRepos(user.id, "");
-  const top25 = repos.slice(0, 25);
-
-  if (top25.length === 0) {
-    await message.reply("利用可能なリポジトリが見つかりませんでした。");
-    return;
-  }
+  const top24 = repos.slice(0, 24);
 
   const select = new StringSelectMenuBuilder()
     .setCustomId(`repo_select:${message.id}`)
     .setPlaceholder("リポジトリを選択...")
-    .addOptions(
-      top25.map((repo) =>
+    .addOptions([
+      new StringSelectMenuOptionBuilder()
+        .setLabel("なし（コードベース不要）")
+        .setDescription("リポジトリを指定せずチャットエージェントとして実行")
+        .setValue("__none__"),
+      ...top24.map((repo) =>
         new StringSelectMenuOptionBuilder()
           .setLabel(repo.full_name.split("/")[1] ?? repo.full_name)
           .setDescription(repo.full_name)
           .setValue(repo.full_name),
       ),
-    );
+    ]);
 
   const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
 
@@ -352,6 +357,11 @@ async function showDiscordRepoSelect(user: User, task: string, message: Message)
       if (!interaction.isStringSelectMenu()) return;
       await interaction.deferUpdate();
       const selectedRepo = interaction.values[0]!;
+      if (selectedRepo === "__none__") {
+        // リポジトリなし: ブランチ選択をスキップしてデリバラブル選択へ
+        await showDiscordDeliverableSelect(user, task, "", "", message, replyMsg);
+        return;
+      }
       await recordRecentRepo(user.id, selectedRepo);
       await showDiscordBranchSelect(user, task, selectedRepo, message, replyMsg);
     })();

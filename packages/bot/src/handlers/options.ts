@@ -35,11 +35,16 @@ export function registerOptionsHandlers(app: App): void {
 
     const repos = await listInstallationRepos(accountLink.userId, query);
 
+    const noneOption = {
+      text: { type: "plain_text" as const, text: "なし（コードベース不要）" },
+      value: "__none__",
+    };
+
     await ack({
-      options: repos.slice(0, 100).map((repo) => ({
+      options: [noneOption, ...repos.slice(0, 99).map((repo) => ({
         text: { type: "plain_text" as const, text: repo.full_name },
         value: repo.full_name,
-      })),
+      }))],
     });
   });
 }
