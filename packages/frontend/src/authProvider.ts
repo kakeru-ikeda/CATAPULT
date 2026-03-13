@@ -3,9 +3,25 @@ import type { AuthProvider } from "react-admin";
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
 
 export const authProvider: AuthProvider = {
-  login: async () => {
+  login: async (params: { username?: string; password?: string } = {}) => {
+    // ローカル Admin ログイン（ID/パスワードが渡された場合）
+    if (params.username !== undefined && params.password !== undefined) {
+      const response = await fetch(`${API_URL}/api/auth/admin-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: params.username, password: params.password }),
+      });
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        throw new Error(data.error ?? "Login failed");
+      }
+      const data = (await response.json()) as { token: string; role: string };
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("role", data.role);
+      return;
+    }
+    // GitHub OAuth フロー
     window.location.href = `${API_URL}/api/auth/github?redirect=${encodeURIComponent(window.location.origin)}`;
-    return Promise.resolve();
   },
 
   logout: () => {

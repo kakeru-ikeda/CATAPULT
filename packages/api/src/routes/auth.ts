@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+import { randomBytes, createHmac, timingSafeEqual } from "crypto";
 
 import { PrismaClient } from "@prisma/client";
 import { WebClient } from "@slack/web-api";
@@ -281,6 +281,43 @@ router.get("/github/callback", async (req: Request, res: Response) => {
   }
 });
 
+// ローカル Admin ログイン POST /api/auth/admin-login
+router.post("/admin-login", (req: Request, res: Response) => {
+  const adminUsername = process.env["ADMIN_USERNAME"];
+  const adminPassword = process.env["ADMIN_PASSWORD"];
+
+  if (!adminUsername || !adminPassword) {
+    res.status(503).json({ error: "Admin local login is not configured" });
+    return;
+  }
+
+  const { username, password } = req.body as { username?: string; password?: string };
+
+  if (typeof username !== "string" || typeof password !== "string") {
+    res.status(400).json({ error: "Username and password are required" });
+    return;
+  }
+
+  // HMAC を使った定数時間比較（タイミング攻撃対策）
+  const secret = process.env["JWT_SECRET"] ?? "fallback";
+  const hmac = (v: string) => createHmac("sha256", secret).update(v).digest();
+  const usernameMatch = timingSafeEqual(hmac(adminUsername), hmac(username));
+  const passwordMatch = timingSafeEqual(hmac(adminPassword), hmac(password));
+
+  if (!usernameMatch || !passwordMatch) {
+    res.status(401).json({ error: "Invalid username or password" });
+    return;
+  }
+
+  const token = issueJwt({
+    id: "__admin__",
+    role: "ADMIN",
+    githubUsername: adminUsername,
+  });
+
+  res.json({ token, role: "ADMIN" });
+});
+
 // pendingTask スキップ処理（Slack ボタンのフォールバック）
 router.post("/skip-pending", async (req: Request, res: Response) => {
   const { slackUserId } = req.body as { slackUserId?: string };
@@ -292,6 +329,17 @@ router.post("/skip-pending", async (req: Request, res: Response) => {
 
 // 現在のユーザー情報取得 GET /api/auth/me
 router.get("/me", authMiddleware, async (req: Request, res: Response) => {
+  // ローカル Admin は DB に存在しない仮想ユーザー
+  if (req.user!.id === "__admin__") {
+    res.json({
+      id: "__admin__",
+      githubUsername: req.user!.githubUsername,
+      githubAvatarUrl: null,
+      role: "ADMIN",
+    });
+    return;
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: req.user!.id },
     select: {
