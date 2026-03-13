@@ -4,6 +4,7 @@ import { mkdirSync } from "fs";
 import { writeFile, mkdir } from "fs/promises";
 import { createInterface } from "readline";
 
+import { deploySkills } from "./skill-deployer.js";
 import { execAsync } from "./utils.js";
 
 export interface CopilotEvent {
@@ -56,6 +57,7 @@ const DELIVERABLE_INSTRUCTIONS: Record<DeliverableType, string> = {
 
 export interface ExecuteOptions {
   jobId: string;
+  userId: string;
   prompt: string;
   repository: string; // "owner/repo"
   branch: string;
@@ -87,6 +89,8 @@ export class CopilotExecutor extends EventEmitter {
     if (options.mcpConfig) {
       await this.writeMcpConfig(options.mcpConfig, homeDir);
     }
+
+    await deploySkills(options.userId, homeDir);
 
     const fullPrompt = this.buildPrompt(options);
 

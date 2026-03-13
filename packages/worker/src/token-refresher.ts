@@ -18,7 +18,7 @@ async function waitForRefresh(userId: string): Promise<string> {
     await new Promise<void>((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
     const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
     const fiveMinutesFromNow = new Date(Date.now() + FIVE_MINUTES_MS);
-    if (user.tokenExpiresAt && user.tokenExpiresAt > fiveMinutesFromNow) {
+    if (!user.tokenExpiresAt || user.tokenExpiresAt > fiveMinutesFromNow) {
       return decrypt(user.githubToken);
     }
   }
@@ -78,8 +78,13 @@ async function exchangeRefreshToken(
 export async function refreshTokenIfNeeded(userId: string): Promise<string> {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
 
+  // tokenExpiresAt が null の場合は有効期限なしの classic トークンとして扱い、そのまま返す
+  if (!user.tokenExpiresAt) {
+    return decrypt(user.githubToken);
+  }
+
   const fiveMinutesFromNow = new Date(Date.now() + FIVE_MINUTES_MS);
-  if (user.tokenExpiresAt && user.tokenExpiresAt > fiveMinutesFromNow) {
+  if (user.tokenExpiresAt > fiveMinutesFromNow) {
     return decrypt(user.githubToken);
   }
 
@@ -97,7 +102,7 @@ export async function refreshTokenIfNeeded(userId: string): Promise<string> {
   try {
     // ダブルチェック（別プロセスがリフレッシュ済みの可能性）
     const freshUser = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    if (freshUser.tokenExpiresAt && freshUser.tokenExpiresAt > fiveMinutesFromNow) {
+    if (!freshUser.tokenExpiresAt || freshUser.tokenExpiresAt > fiveMinutesFromNow) {
       return decrypt(freshUser.githubToken);
     }
 

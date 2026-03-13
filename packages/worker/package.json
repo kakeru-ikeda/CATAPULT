@@ -16,9 +16,11 @@
     "@prisma/client": "^5.22.0",
     "bullmq": "^5.70.4",
     "ioredis": "^5.10.0",
+    "jszip": "^3.10.1",
     "node-cron": "^4.2.1"
   },
   "devDependencies": {
+    "@types/jszip": "^3.4.0",
     "@types/node-cron": "^3.0.11",
     "vitest": "^2.0.0"
   }

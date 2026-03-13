@@ -58,9 +58,9 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
   res.status(201).json(tool);
 });
 
-// グローバルMCPツール一覧 GET /api/mcp-tools/global (管理者)
+// グローバルMCPツール一覧 GET /api/mcp-tools/global (認証済みユーザー)
 // NOTE: /:id より先に登録することで "global" を /:id に奪われないようにする
-router.get("/global", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
+router.get("/global", authMiddleware, async (req: Request, res: Response) => {
   const start = Number(req.query["_start"] ?? 0);
   const end = Number(req.query["_end"] ?? 10);
   const sort = (req.query["_sort"] as string | undefined) ?? "createdAt";
@@ -106,8 +106,8 @@ router.post("/global", authMiddleware, adminMiddleware, async (req: Request, res
   res.status(201).json(tool);
 });
 
-// グローバルMCPツール詳細 GET /api/mcp-tools/global/:id (管理者)
-router.get("/global/:id", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
+// グローバルMCPツール詳細 GET /api/mcp-tools/global/:id (認証済みユーザー)
+router.get("/global/:id", authMiddleware, async (req: Request, res: Response) => {
   const tool = await prisma.mcpTool.findUnique({
     where: { id: req.params["id"] as string },
   });

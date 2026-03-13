@@ -42,8 +42,12 @@ async function getMcpConfig(userId: string): Promise<object | undefined> {
 
 async function getActiveInstructions(userId: string): Promise<string | undefined> {
   const instructions = await prisma.instruction.findMany({
-    where: { userId, isActive: true },
-    orderBy: { createdAt: "asc" },
+    where: {
+      isActive: true,
+      OR: [{ isGlobal: true }, { userId }],
+    },
+    // グローバルを先に、ユーザー定義を後に並べることでユーザー定義が優先される
+    orderBy: [{ isGlobal: "desc" }, { createdAt: "asc" }],
   });
 
   if (instructions.length === 0) return undefined;
@@ -139,6 +143,7 @@ export function createWorker(): Worker<JobData> {
 
         await executor.execute({
           jobId,
+          userId: dbJob.userId,
           prompt: dbJob.prompt,
           repository: dbJob.repository,
           branch: dbJob.branch,

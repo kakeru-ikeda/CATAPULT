@@ -40,6 +40,12 @@ enum DeliverableType {
     REVIEW
 }
 
+// スキルスコープ
+enum SkillScope {
+    GLOBAL // 管理者が管理、全ユーザーの全ジョブに適用
+    USER // ユーザー個人のスキル、そのユーザーのジョブのみ
+}
+
 // ユーザー
 model User {
     id                    String    @id @default(cuid())
@@ -57,6 +63,7 @@ model User {
     jobs         Job[]
     mcpTools     McpTool[]
     instructions Instruction[]
+    skills       Skill[]
 }
 
 // Slack/Discord アカウント連携
@@ -133,15 +140,39 @@ model McpTool {
     owner User? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 }
 
+// スキル
+model Skill {
+    id          String     @id @default(cuid())
+    name        String // スキルディレクトリ名（小文字ハイフン形式）
+    displayName String // 管理画面表示名
+    description String // SKILL.md の description フィールド
+    content     String // SKILL.md 全文
+    scope       SkillScope @default(USER)
+    ownerId     String? // scope=GLOBAL の場合は null
+    enabled     Boolean    @default(true)
+    version     String     @default("1.0.0")
+    sourceZip   Bytes? // ZIP アップロード時の元データ
+    createdAt   DateTime   @default(now())
+    updatedAt   DateTime   @updatedAt
+
+    owner User? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+    @@unique([name, scope, ownerId])
+    @@index([scope, enabled])
+}
+
 // カスタムインストラクション
 model Instruction {
     id        String   @id @default(cuid())
-    userId    String
+    userId    String? // null: グローバルインストラクション
     name      String
     content   String
     isActive  Boolean  @default(true)
+    isGlobal  Boolean  @default(false) // true: 全ユーザーに適用
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([isGlobal, isActive])
 }

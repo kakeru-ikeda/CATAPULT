@@ -40,6 +40,8 @@ services:
       APP_URL: ${APP_URL:-http://localhost:8080}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     ports:
       - "3000:3000"
     depends_on:
@@ -59,6 +61,8 @@ services:
       NODE_ENV: production
       APP_URL: ${APP_URL:-http://localhost:3000}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+      GITHUB_APP_CLIENT_ID: ${GITHUB_APP_CLIENT_ID}
+      GITHUB_APP_CLIENT_SECRET: ${GITHUB_APP_CLIENT_SECRET}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
       SLACK_APP_TOKEN: ${SLACK_APP_TOKEN:-}
