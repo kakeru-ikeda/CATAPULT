@@ -139,6 +139,7 @@ export function createWorker(): Worker<JobData> {
 
         await executor.execute({
           jobId,
+          userId: dbJob.userId,
           prompt: dbJob.prompt,
           repository: dbJob.repository,
           branch: dbJob.branch,

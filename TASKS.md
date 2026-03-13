@@ -183,3 +183,16 @@
 - [x] packages/bot/src/handlers/interactive.ts: ブランチ選択モーダルに着地期待値 static_select 追加、select_branch submit で submitJob を直接呼び出し、submit_job アクションハンドラー追加
 - [x] packages/bot/src/handlers/discord-task.ts: DeliverableType 型追加、showDiscordDeliverableSelect 関数追加、ブランチ選択後に DeliverableSelect フローへ、submitDiscordJob に deliverableType 引数追加
 - [x] packages/api/src/routes/jobs.ts: POST /api/jobs に deliverableType パラメータ追加（バリデーション・デフォルト "pr"）
+
+## Phase 8: Skills 機能
+
+- [x] prisma/schema.prisma: SkillScope enum・Skill モデル追加、User.skills リレーション追加
+- [x] prisma/migrations/20260313000000_add_skills: マイグレーション SQL 作成
+- [x] packages/worker/src/skill-deployer.ts: deploySkills/getActiveSkills 実装（パストラバーサル対策込み）
+- [x] packages/worker/src/executor.ts: ExecuteOptions に userId 追加、deploySkills 呼び出し・--skills-dir フラグ統合
+- [x] packages/worker/src/job-processor.ts: executor.execute() に userId を渡す
+- [x] packages/api/src/routes/skills.ts: Skills CRUD API（個人スキル + グローバルスキル/global）
+- [x] packages/api/src/index.ts: /api/skills ルート登録
+- [x] packages/frontend/src/pages/admin/GlobalSkillConfig.tsx: 管理者向けグローバルスキル管理画面
+- [x] packages/frontend/src/pages/user/MySkills.tsx: ユーザー向け個人スキル管理画面
+- [x] packages/frontend/src/App.tsx: skills/global・skills リソース登録

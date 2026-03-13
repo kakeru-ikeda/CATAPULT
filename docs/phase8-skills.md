@@ -78,10 +78,7 @@ export interface SkillEntry {
   content: string;
 }
 
-export async function deploySkills(
-  userId: string,
-  homeDir: string,
-): Promise<string | null> {
+export async function deploySkills(userId: string, homeDir: string): Promise<string | null> {
   const skills = await getActiveSkills(userId);
   if (skills.length === 0) return null;
 

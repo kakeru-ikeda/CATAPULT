@@ -29,10 +29,10 @@ Copilot CLI は起動時に以下のディレクトリをスキャンし、`SKIL
 
 ### プロンプト注入との違い
 
-| 方式 | 説明 | 問題点 |
-|------|------|------|
-| ❌ プロンプト注入 | SKILL.md の内容を `-p` のプロンプトに文字列として展開 | ただの長いインストラクションと同じ。Copilot が Skills として認識しない |
-| ✅ ファイルシステム配置 + `--skills-dir` | `SKILL.md` をファイルとして配置し CLI フラグで教える | Copilot が Skills として認識し、description をもとに自律選択・適用する |
+| 方式                                     | 説明                                                  | 問題点                                                                 |
+| ---------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------- |
+| ❌ プロンプト注入                        | SKILL.md の内容を `-p` のプロンプトに文字列として展開 | ただの長いインストラクションと同じ。Copilot が Skills として認識しない |
+| ✅ ファイルシステム配置 + `--skills-dir` | `SKILL.md` をファイルとして配置し CLI フラグで教える  | Copilot が Skills として認識し、description をもとに自律選択・適用する |
 
 ### CATAPULT での正しいフロー
 
@@ -77,20 +77,20 @@ description: このスキルが適用されるべき状況の説明（Copilot �
 
 ### 権限マトリクス
 
-| | グローバルスキル (scope=GLOBAL) | 個人スキル (scope=USER) |
-|---|---|---|
-| **管理者 (ADMIN)** | ✅ CRUD | ❌ 操作不可 |
-| **一般ユーザー (USER)** | 👁️ 閲覧のみ（自動適用） | ✅ CRUD |
+|                         | グローバルスキル (scope=GLOBAL) | 個人スキル (scope=USER) |
+| ----------------------- | ------------------------------- | ----------------------- |
+| **管理者 (ADMIN)**      | ✅ CRUD                         | ❌ 操作不可             |
+| **一般ユーザー (USER)** | 👁️ 閲覧のみ（自動適用）         | ✅ CRUD                 |
 
 ### 既存機能との対応関係
 
 Skills のスコープ設計は既存の MCP ツールと同じパターンを踏襲します。
 
-| 機能 | グローバル管理フィールド | 個人管理フィールド |
-|------|------|------|
-| MCP ツール | `isGlobal=true` | `ownerId=userId` |
-| **Skills** | `scope=GLOBAL` | `scope=USER, ownerId=userId` |
-| Instructions | なし（個人のみ） | `userId` |
+| 機能         | グローバル管理フィールド | 個人管理フィールド           |
+| ------------ | ------------------------ | ---------------------------- |
+| MCP ツール   | `isGlobal=true`          | `ownerId=userId`             |
+| **Skills**   | `scope=GLOBAL`           | `scope=USER, ownerId=userId` |
+| Instructions | なし（個人のみ）         | `userId`                     |
 
 ---
 
@@ -138,16 +138,16 @@ model User {
 
 ### フィールド詳細
 
-| フィールド | 型 | 説明 |
-|---|---|---|
-| `name` | String | ファイルシステム上のディレクトリ名。小文字ハイフン形式。`@@unique([name, scope, ownerId])` でスコープ内一意 |
-| `displayName` | String | 管理画面での表示名 |
-| `description` | String | Copilot CLI がスキルを自律選択する際に参照するフィールド。SKILL.md の frontmatter `description` と一致させる |
-| `content` | String | SKILL.md の全文（frontmatter 込み）。Worker 実行時にそのままファイルに書き出す |
-| `scope` | SkillScope | `GLOBAL`（全ユーザーに適用）/ `USER`（個人スキル） |
-| `ownerId` | String? | `scope=USER` の場合のユーザーID。`scope=GLOBAL` の場合は null |
-| `enabled` | Boolean | 無効にするとジョブ実行時に配置されない |
-| `sourceZip` | Bytes? | ZIP アップロード時の元ファイル。再ダウンロード用に保存 |
+| フィールド    | 型         | 説明                                                                                                         |
+| ------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
+| `name`        | String     | ファイルシステム上のディレクトリ名。小文字ハイフン形式。`@@unique([name, scope, ownerId])` でスコープ内一意  |
+| `displayName` | String     | 管理画面での表示名                                                                                           |
+| `description` | String     | Copilot CLI がスキルを自律選択する際に参照するフィールド。SKILL.md の frontmatter `description` と一致させる |
+| `content`     | String     | SKILL.md の全文（frontmatter 込み）。Worker 実行時にそのままファイルに書き出す                               |
+| `scope`       | SkillScope | `GLOBAL`（全ユーザーに適用）/ `USER`（個人スキル）                                                           |
+| `ownerId`     | String?    | `scope=USER` の場合のユーザーID。`scope=GLOBAL` の場合は null                                                |
+| `enabled`     | Boolean    | 無効にするとジョブ実行時に配置されない                                                                       |
+| `sourceZip`   | Bytes?     | ZIP アップロード時の元ファイル。再ダウンロード用に保存                                                       |
 
 ---
 
@@ -206,10 +206,7 @@ export interface SkillEntry {
 /**
  * アクティブなスキルをファイルシステムに書き出し、--skills-dir パスを返す
  */
-export async function deploySkills(
-  userId: string,
-  homeDir: string,
-): Promise<string | null> {
+export async function deploySkills(userId: string, homeDir: string): Promise<string | null> {
   const skills = await getActiveSkills(userId);
   if (skills.length === 0) return null;
 
@@ -384,7 +381,9 @@ router.post("/upload", authMiddleware, upload.single("file"), async (req, res) =
   const descMatch = content.match(/^description:\s*(.+)$/m);
 
   if (!nameMatch || !descMatch) {
-    return res.status(400).json({ error: "SKILL.md に name または description が含まれていません" });
+    return res
+      .status(400)
+      .json({ error: "SKILL.md に name または description が含まれていません" });
   }
 
   const skill = await prisma.skill.create({
