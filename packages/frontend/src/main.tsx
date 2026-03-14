@@ -20,7 +20,7 @@ function consumeAuthCallbackFromUrl(): void {
   localStorage.setItem("role", role);
 
   // Remove token from URL before the app mounts to avoid auth race conditions and token leaks.
-  window.history.replaceState(null, "", "/");
+  window.history.replaceState(null, "", import.meta.env.BASE_URL);
 }
 
 consumeAuthCallbackFromUrl();

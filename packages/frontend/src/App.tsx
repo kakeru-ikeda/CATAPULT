@@ -1,5 +1,5 @@
 import { Admin, CustomRoutes, Resource } from "react-admin";
-import { Route } from "react-router-dom";
+import { BrowserRouter, Route } from "react-router-dom";
 
 import { authProvider } from "./authProvider.js";
 import { dataProvider } from "./dataProvider.js";
@@ -27,16 +27,20 @@ import { MyInstructions } from "./pages/user/MyInstructions.js";
 import { MyJobs } from "./pages/user/MyJobs.js";
 import { MySkills, MySkillEdit } from "./pages/user/MySkills.js";
 
+const basename = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 export const App = () => (
-  <Admin
-    dataProvider={dataProvider}
-    authProvider={authProvider}
-    dashboard={Dashboard}
-    loginPage={LoginPage}
-  >
-    {(permissions) => (
-      <>
-        {/* 管理者モード */}
+  <BrowserRouter>
+    <Admin
+      basename={basename}
+      dataProvider={dataProvider}
+      authProvider={authProvider}
+      dashboard={Dashboard}
+      loginPage={LoginPage}
+    >
+      {(permissions) => (
+        <>
+          {/* 管理者モード */}
         {permissions === "ADMIN" && (
           <>
             <Resource name="users" list={UserList} edit={UserEdit} />
@@ -79,4 +83,5 @@ export const App = () => (
       </>
     )}
   </Admin>
+  </BrowserRouter>
 );

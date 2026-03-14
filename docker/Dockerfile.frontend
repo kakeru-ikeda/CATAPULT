@@ -13,6 +13,9 @@ COPY packages/frontend/tsconfig.json ./packages/frontend/
 COPY packages/frontend/index.html ./packages/frontend/
 COPY packages/frontend/vite.config.ts ./packages/frontend/
 
+ARG VITE_BASE_PATH=/catapult/
+ENV VITE_BASE_PATH=${VITE_BASE_PATH}
+
 RUN npm run build --workspace=packages/frontend
 
 FROM docker.io/library/nginx:alpine AS runner

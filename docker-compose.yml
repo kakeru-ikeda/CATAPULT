@@ -29,6 +29,11 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+    networks:
+      default:
+      catapult-proxy:
+        aliases:
+          - catapult-api
     environment:
       DATABASE_URL: postgresql://catapult:${POSTGRES_PASSWORD}@postgres:5432/catapult
       REDIS_URL: redis://redis:6379
@@ -97,10 +102,19 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.frontend
+    networks:
+      default:
+      catapult-proxy:
+        aliases:
+          - catapult-frontend
     ports:
       - "${FRONTEND_PORT:-8080}:80"
     depends_on:
       - api
+
+networks:
+  catapult-proxy:
+    external: true
 
 volumes:
   postgres_data:
