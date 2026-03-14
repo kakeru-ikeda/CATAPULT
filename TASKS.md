@@ -231,3 +231,7 @@
 ## 本番運用ドキュメント
 
 - [x] docs/operations.md: サーバー導入・Slack/Discord Bot パーミッション設定・ローカルエージェント設定・日常運用・トラブルシューティング・バックアップ手順を網羅した運用マニュアル作成
+
+## チャット返信品質改善
+
+- [x] worker/local-agent の最終 assistant.message に `送信用メッセージ` セクションを必須化し、Slack/Discord 返信はそのセクションを優先採用する

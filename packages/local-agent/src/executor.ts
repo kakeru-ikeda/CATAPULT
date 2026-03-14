@@ -4,6 +4,17 @@ import { createInterface } from "readline";
 
 import { EventReporter } from "./event-reporter.js";
 
+const SENDABLE_MESSAGE_INSTRUCTION = `## 重要: 最終メッセージの形式
+最後の assistant.message には、Slack / Discord にそのまま送れる完了報告を必ず含めてください。
+末尾に必ず次のセクションを追加し、このセクション単体で送信文として完結させてください。
+
+## 送信用メッセージ
+- 日本語で簡潔かつ自然にまとめる
+- 実施したこと、主要な変更点、確認したテスト結果を含める
+- PR URL や「以上です」のような冗長な締めは含めない
+- 2〜5文程度で、進捗説明ではなく完了報告として書く
+`;
+
 export interface LocalExecuteOptions {
   jobId: string;
   workDir: string; // ローカルリポジトリの絶対パス
@@ -22,6 +33,7 @@ export class LocalCopilotExecutor extends EventEmitter {
     const { jobId, workDir, prompt, repository, branch, githubToken } = options;
 
     const denyArgs = LocalCopilotExecutor.DENIED_TOOLS.flatMap((t) => ["--deny-tool", t]);
+    const fullPrompt = this.buildPrompt(prompt);
 
     const args = [
       "--autopilot",
@@ -29,7 +41,7 @@ export class LocalCopilotExecutor extends EventEmitter {
       "--output-format",
       "json",
       "-p",
-      prompt,
+      fullPrompt,
       ...denyArgs,
     ];
 
@@ -122,5 +134,9 @@ export class LocalCopilotExecutor extends EventEmitter {
 
   cancel(): void {
     this.proc?.kill("SIGTERM");
+  }
+
+  private buildPrompt(prompt: string): string {
+    return [SENDABLE_MESSAGE_INSTRUCTION, prompt].join("\n\n");
   }
 }
