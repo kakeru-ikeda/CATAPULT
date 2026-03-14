@@ -75,29 +75,6 @@ export function registerInteractiveHandlers(app: App): void {
                 text: "💬 *チャットエージェントモード*\nリポジトリを指定せず、コードベースに囚われないエージェントとして実行します。",
               },
             },
-            {
-              type: "input",
-              block_id: "deliverable_block",
-              element: {
-                type: "static_select",
-                action_id: "deliverable_select",
-                initial_option: {
-                  text: { type: "plain_text" as const, text: "🔍 調査・報告" },
-                  value: "report",
-                },
-                options: [
-                  {
-                    text: { type: "plain_text" as const, text: "🔍 調査・報告" },
-                    value: "report",
-                  },
-                  {
-                    text: { type: "plain_text" as const, text: "👁 コードレビュー" },
-                    value: "review",
-                  },
-                ],
-              },
-              label: { type: "plain_text", text: "完了形式" },
-            },
           ],
         },
       });
@@ -197,8 +174,11 @@ export function registerInteractiveHandlers(app: App): void {
       await recordRecentBranch(metadata.userId, metadata.repo, branchValue!);
     }
 
-    const deliverableValue = (view.state.values["deliverable_block"]?.["deliverable_select"]
-      ?.selected_option?.value ?? "pr") as DeliverableType;
+    // チャットエージェントモードはdeliverable選択なし → report 固定
+    const deliverableValue: DeliverableType = isChatMode
+      ? "report"
+      : ((view.state.values["deliverable_block"]?.["deliverable_select"]?.selected_option?.value ??
+          "pr") as DeliverableType);
 
     const user = await prisma.user.findUniqueOrThrow({ where: { id: metadata.userId } });
 

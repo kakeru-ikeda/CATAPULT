@@ -124,7 +124,11 @@ export class JobStreamRelay {
         let statusText = "✅ *完了*";
         if (event.prUrl) statusText += `\n<${event.prUrl}|PR を開く>`;
         void this.updateProgressMessage(statusText).then(async () => {
-          await this.postSummaryMessage(event.summary ?? "タスクが完了しました");
+          const summary = event.summary ?? "タスクが完了しました";
+          const fullSummary = event.prUrl
+            ? `${summary}\n\n🔀 *作成された PR:* <${event.prUrl}|PR を開く>`
+            : summary;
+          await this.postSummaryMessage(fullSummary);
           this.cleanup();
         });
         break;

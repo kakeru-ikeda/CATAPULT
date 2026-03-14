@@ -80,10 +80,12 @@ export class CopilotExecutor extends EventEmitter {
 
     // git clone (リポジトリが指定されている場合のみ)
     if (options.repository) {
+      console.info(`[Job ${options.jobId}] Cloning ${options.repository}@${options.branch}...`);
       const repoUrl = `https://x-access-token:${options.githubToken}@github.com/${options.repository}.git`;
       await execAsync(`git clone --depth=1 --branch=${options.branch} ${repoUrl} .`, {
         cwd: workDir,
       });
+      console.info(`[Job ${options.jobId}] Clone complete`);
     }
 
     const homeDir = `/tmp/copilot-jobs/${options.jobId}/home`;
@@ -117,6 +119,8 @@ export class CopilotExecutor extends EventEmitter {
         },
       },
     );
+
+    console.info(`[Job ${options.jobId}] Copilot CLI spawned (PID: ${this.proc.pid})`);
 
     const rl = createInterface({ input: this.proc.stdout! });
 

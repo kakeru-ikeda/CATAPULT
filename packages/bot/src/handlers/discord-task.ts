@@ -358,8 +358,12 @@ async function showDiscordRepoSelect(user: User, task: string, message: Message)
       await interaction.deferUpdate();
       const selectedRepo = interaction.values[0]!;
       if (selectedRepo === "__none__") {
-        // リポジトリなし: ブランチ選択をスキップしてデリバラブル選択へ
-        await showDiscordDeliverableSelect(user, task, "", "", message, replyMsg);
+        // リポジトリなし: チャットエージェントモード → deliverable 選択不要で即時投入
+        await replyMsg.edit({
+          content: `💬 **チャットエージェントモード** で実行します\n**タスク:** ${task}`,
+          components: [],
+        });
+        await submitDiscordJob(user, task, "", "", "report", message);
         return;
       }
       await recordRecentRepo(user.id, selectedRepo);
