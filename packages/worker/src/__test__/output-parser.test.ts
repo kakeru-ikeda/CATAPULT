@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import type { CopilotEvent } from "../executor.js";
-import { parseCopilotEvent, extractPrUrl } from "../output-parser.js";
+import { extractFinalAssistantMessage, extractPrUrl, parseCopilotEvent } from "../output-parser.js";
 
 describe("parseCopilotEvent", () => {
   it("有効な JSON を正しくパースする", () => {
@@ -63,5 +63,24 @@ describe("extractPrUrl", () => {
 
   it("空配列は undefined を返す", () => {
     expect(extractPrUrl([])).toBeUndefined();
+  });
+});
+
+describe("extractFinalAssistantMessage", () => {
+  it("最後の非空 assistant.message を返す", () => {
+    const events: CopilotEvent[] = [
+      { type: "assistant.message", data: { content: "途中経過" } },
+      { type: "assistant.message", data: { content: "   " } },
+      { type: "done", summary: "完了しました" },
+      { type: "assistant.message", data: { content: "最終サマリー" } },
+    ];
+
+    expect(extractFinalAssistantMessage(events)).toBe("最終サマリー");
+  });
+
+  it("assistant.message が無い場合は undefined を返す", () => {
+    const events: CopilotEvent[] = [{ type: "done", summary: "完了しました" }];
+
+    expect(extractFinalAssistantMessage(events)).toBeUndefined();
   });
 });
