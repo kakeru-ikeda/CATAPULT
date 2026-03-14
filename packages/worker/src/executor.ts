@@ -170,7 +170,11 @@ export class CopilotExecutor extends EventEmitter {
     const previousContextSection = options.previousContext
       ? `## 前回の作業サマリー\n${options.previousContext}`
       : "";
-    const deliverableInstruction = DELIVERABLE_INSTRUCTIONS[options.deliverableType ?? "pr"];
+    const deliverableType = options.deliverableType ?? "pr";
+    const deliverableInstruction =
+      deliverableType === "pr" && options.repository
+        ? `## 出力形式: PR 作成\n変更をブランチにコミット・プッシュし、\`${options.repository}\` リポジトリにプルリクエストを作成してください。\n`
+        : DELIVERABLE_INSTRUCTIONS[deliverableType];
     return [
       deliverableInstruction,
       branchInstruction,
