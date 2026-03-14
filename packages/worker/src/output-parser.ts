@@ -37,3 +37,16 @@ export function extractPrUrl(events: CopilotEvent[]): string | undefined {
   }
   return undefined;
 }
+
+export function extractFinalAssistantMessage(events: CopilotEvent[]): string | undefined {
+  const assistantContents = events
+    .filter(
+      (event): event is CopilotEvent & { data: { content: string } } =>
+        event.type === "assistant.message" &&
+        typeof event.data?.content === "string" &&
+        event.data.content.trim().length > 0,
+    )
+    .map((event) => event.data.content);
+
+  return assistantContents.at(-1);
+}

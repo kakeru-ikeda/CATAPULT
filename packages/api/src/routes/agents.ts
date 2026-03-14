@@ -7,6 +7,8 @@ import Redis from "ioredis";
 
 import { adminMiddleware, authMiddleware } from "../middleware/auth.js";
 
+import { extractCompletionFromLogs } from "./agent-completion.js";
+
 const prisma = new PrismaClient();
 const redis = new Redis(process.env["REDIS_URL"]!);
 
@@ -271,44 +273,7 @@ router.post("/jobs/:jobId/complete", async (req: Request, res: Response) => {
     orderBy: { id: "asc" },
   });
 
-  // PR URL を抽出（done イベントの prUrl か assistant.message 中の github.com/*/pull/* URL）
-  const prUrlPattern = /https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+/;
-  let prUrl: string | undefined;
-
-  // すべての assistant.message を収集し、最も長いものを summary として使用する。
-  // copilot は最後に「完了しました」等の短いメタメッセージを出す傾向があるため、
-  // last ではなく longest を採用する。
-  const assistantContents: string[] = [];
-
-  for (const log of logs) {
-    try {
-      const ev = JSON.parse(log.content) as {
-        type?: string;
-        prUrl?: string;
-        data?: { content?: string };
-      };
-      if (ev.prUrl) {
-        prUrl = ev.prUrl;
-      } else if (
-        log.eventType === "assistant.message" &&
-        typeof ev.data?.content === "string" &&
-        ev.data.content.trim()
-      ) {
-        assistantContents.push(ev.data.content);
-        const m = ev.data.content.match(prUrlPattern);
-        if (m) prUrl = m[0];
-      }
-    } catch {
-      // パース失敗は無視
-    }
-  }
-
-  // 最も長い assistant.message を summary として採用
-  const longestContent = assistantContents.reduce<string | undefined>(
-    (best, cur) => (best === undefined || cur.length > best.length ? cur : best),
-    undefined,
-  );
-  const summary = longestContent ?? "タスクが完了しました";
+  const { prUrl, summary } = extractCompletionFromLogs(logs);
 
   await prisma.job.update({
     where: { id: jobId },
