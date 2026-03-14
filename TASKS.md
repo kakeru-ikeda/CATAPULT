@@ -221,3 +221,7 @@
 - [x] packages/local-agent/src/executor.ts: clone なし LocalCopilotExecutor
 - [x] packages/local-agent/src/agent.ts: ハートビート＋ポーリングメインループ（30秒間隔）
 - [x] packages/local-agent/src/index.ts: CLI エントリーポイント（init/start コマンド）
+
+## 本番運用ドキュメント
+
+- [x] docs/operations.md: サーバー導入・Slack/Discord Bot パーミッション設定・ローカルエージェント設定・日常運用・トラブルシューティング・バックアップ手順を網羅した運用マニュアル作成
