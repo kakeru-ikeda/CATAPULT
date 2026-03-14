@@ -1,0 +1,29 @@
+{
+  "name": "catapult-agent",
+  "version": "0.1.0",
+  "description": "Local agent daemon for CATAPULT",
+  "private": false,
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "catapult-agent": "./dist/index.js"
+  },
+  "files": [
+    "dist/"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc && node -e \"import('fs').then(fs => { const p = './dist/index.js'; const c = fs.readFileSync(p,'utf8'); if(!c.startsWith('#!/')) fs.writeFileSync(p,'#!/usr/bin/env node\\n'+c); require('child_process').execSync('chmod +x '+p); })\"",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}

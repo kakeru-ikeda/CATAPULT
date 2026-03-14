@@ -200,3 +200,24 @@
 - [x] packages/frontend/src/pages/admin/GlobalSkillConfig.tsx: 管理者向けグローバルスキル管理画面
 - [x] packages/frontend/src/pages/user/MySkills.tsx: ユーザー向け個人スキル管理画面
 - [x] packages/frontend/src/App.tsx: skills/global・skills リソース登録
+
+## local-agent 機能
+
+- [x] prisma/schema.prisma: AgentStatus enum・ExecutionMode enum・LocalAgent モデル追加、Job に executionMode/localAgentId 追加、User に localAgents リレーション追加
+- [x] prisma/migrations/20260314054400_add_local_agent: マイグレーション作成・適用
+- [x] packages/api/src/routes/agents.ts: エージェント用 API エンドポイント群（register/heartbeat/me/claim/events/complete/fallback）
+- [x] packages/api/src/index.ts: /api/agents ルート登録
+- [x] packages/api/src/routes/users.ts: ユーザー一覧に localAgents をインクルード
+- [x] packages/bot/src/handlers/task.ts: TaskContext に executionMode/localAgentId 追加、submitJob に LOCAL モード分岐
+- [x] packages/bot/src/handlers/interactive.ts: ブランチ選択モーダルに実行モード選択追加（ONLINE エージェント存在時のみ）
+- [x] packages/bot/src/handlers/discord-task.ts: showDiscordDeliverableSelect に実行モード選択追加
+- [x] packages/frontend/src/pages/admin/UserList.tsx: LocalAgentStatusField コンポーネント追加
+- [x] packages/frontend/src/pages/user/Dashboard.tsx: AgentStatusCard コンポーネント追加
+- [x] packages/local-agent/package.json: npm 公開設定（catapult-agent CLI）
+- [x] packages/local-agent/tsconfig.json: TypeScript 設定
+- [x] packages/local-agent/src/config.ts: ~/.catapult/config.json の読み書き
+- [x] packages/local-agent/src/event-reporter.ts: イベントバッファリング送信（2秒間隔）
+- [x] packages/local-agent/src/workspace-resolver.ts: .git/config の remote URL による動的リポジトリ解決
+- [x] packages/local-agent/src/executor.ts: clone なし LocalCopilotExecutor
+- [x] packages/local-agent/src/agent.ts: ハートビート＋ポーリングメインループ（30秒間隔）
+- [x] packages/local-agent/src/index.ts: CLI エントリーポイント（init/start コマンド）

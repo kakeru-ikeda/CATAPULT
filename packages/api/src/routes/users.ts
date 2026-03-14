@@ -28,6 +28,15 @@ router.get("/", authMiddleware, adminMiddleware, async (req: Request, res: Respo
         role: true,
         createdAt: true,
         updatedAt: true,
+        localAgents: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+            workspaceRoot: true,
+            lastHeartbeatAt: true,
+          },
+        },
       },
     }),
     prisma.user.count(),
