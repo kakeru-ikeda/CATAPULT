@@ -41,10 +41,13 @@ export function registerOptionsHandlers(app: App): void {
     };
 
     await ack({
-      options: [noneOption, ...repos.slice(0, 99).map((repo) => ({
-        text: { type: "plain_text" as const, text: repo.full_name },
-        value: repo.full_name,
-      }))],
+      options: [
+        noneOption,
+        ...repos.slice(0, 99).map((repo) => ({
+          text: { type: "plain_text" as const, text: repo.full_name },
+          value: repo.full_name,
+        })),
+      ],
     });
   });
 }
