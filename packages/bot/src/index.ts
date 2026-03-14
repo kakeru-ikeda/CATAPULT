@@ -22,20 +22,23 @@ if (slackApp) {
 registerDiscordHandlers();
 
 // Slack & Discord アプリ起動
+let discordStarted = false;
 void (async () => {
   if (slackApp) {
     await slackApp.start();
     console.info("⚡️ CATAPULT Slack Bot is running (Socket Mode)");
   }
-  await startDiscord();
-  console.info("🤖 CATAPULT Discord Bot is running");
+  discordStarted = await startDiscord();
+  if (discordStarted) {
+    console.info("🤖 CATAPULT Discord Bot is running");
+  }
 })();
 
 async function shutdown(signal: string): Promise<void> {
   console.info(`Received ${signal}, shutting down...`);
   await Promise.allSettled([
     slackApp ? slackApp.stop() : Promise.resolve(),
-    discordClient.destroy(),
+    discordStarted ? discordClient.destroy() : Promise.resolve(),
   ]);
   process.exit(0);
 }
