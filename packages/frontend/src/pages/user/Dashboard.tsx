@@ -1,4 +1,20 @@
-import { Box, Card, CardContent, Chip, CircularProgress, Typography } from "@mui/material";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import {
+  Alert,
+  Box,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
+  OutlinedInput,
+  Snackbar,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { useEffect, useState } from "react";
 import { Title, useGetList } from "react-admin";
 
@@ -101,6 +117,72 @@ const AgentStatusCard = () => {
   );
 };
 
+const AgentTokenCard = () => {
+  const [token, setToken] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setToken(localStorage.getItem("token"));
+  }, []);
+
+  if (!token) return null;
+
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(token).then(() => {
+      setCopied(true);
+    });
+  };
+
+  return (
+    <Card variant="outlined" sx={{ mt: 2 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          🔑 ローカルエージェント用トークン
+        </Typography>
+        <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+          <code>catapult-agent init</code> の JWT トークン入力欄にこの値を貼り付けてください。
+        </Typography>
+        <OutlinedInput
+          fullWidth
+          size="small"
+          readOnly
+          value={visible ? token : "•".repeat(40)}
+          sx={{ fontFamily: "monospace", fontSize: "0.8rem" }}
+          endAdornment={
+            <InputAdornment position="end">
+              <Tooltip title={visible ? "非表示" : "表示"}>
+                <IconButton size="small" onClick={() => setVisible((v) => !v)}>
+                  {visible ? (
+                    <VisibilityOffIcon fontSize="small" />
+                  ) : (
+                    <VisibilityIcon fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="コピー">
+                <IconButton size="small" onClick={handleCopy} sx={{ ml: 0.5 }}>
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </InputAdornment>
+          }
+        />
+        <Snackbar
+          open={copied}
+          autoHideDuration={2000}
+          onClose={() => setCopied(false)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert severity="success" variant="filled" sx={{ width: "100%" }}>
+            トークンをコピーしました
+          </Alert>
+        </Snackbar>
+      </CardContent>
+    </Card>
+  );
+};
+
 export const Dashboard = () => {
   const { data: jobs, total } = useGetList<Job>("jobs", {
     pagination: { page: 1, perPage: 5 },
@@ -142,6 +224,7 @@ export const Dashboard = () => {
           </Card>
         </Box>
         <AgentStatusCard />
+        <AgentTokenCard />
       </CardContent>
     </Card>
   );

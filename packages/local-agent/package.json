@@ -1,7 +1,7 @@
 {
   "name": "catapult-agent",
-  "version": "0.1.0",
-  "description": "Local agent daemon for CATAPULT",
+  "version": "1.0.1",
+  "description": "CATAPULT Local Agent - A command-line tool for AI coding assistance",
   "private": false,
   "type": "module",
   "main": "./dist/index.js",
@@ -9,7 +9,8 @@
     "catapult-agent": "./dist/index.js"
   },
   "files": [
-    "dist/"
+    "dist/",
+    "README.md"
   ],
   "engines": {
     "node": ">=22"
@@ -17,7 +18,29 @@
   "scripts": {
     "build": "tsc && node -e \"import('fs').then(fs => { const p = './dist/index.js'; const c = fs.readFileSync(p,'utf8'); if(!c.startsWith('#!/')) fs.writeFileSync(p,'#!/usr/bin/env node\\n'+c); require('child_process').execSync('chmod +x '+p); })\"",
     "dev": "tsc --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "catapult",
+    "copilot-catapult",
+    "github-copilot",
+    "local-agent",
+    "copilot-cli",
+    "ai-coding",
+    "agent",
+    "slack",
+    "discord"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kakeru-ikeda/CATAPULT.git",
+    "directory": "packages/local-agent"
+  },
+  "homepage": "https://github.com/kakeru-ikeda/CATAPULT#readme",
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "commander": "^12.0.0"

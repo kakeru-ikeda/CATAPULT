@@ -543,16 +543,19 @@ catapult-agent init
 ```
 === CATAPULT ローカルエージェント セットアップ ===
 
-CATAPULT サーバーの URL: https://your-domain.com
+CATAPULT API サーバーの URL (例: https://api.catapult.example.com): https://api.your-domain.com
+CATAPULT 管理画面の URL (例: https://catapult.example.com): https://your-domain.com
 このマシンの名前 [MacBook-Pro]: MyLaptop
 ローカルのワークスペース親フォルダ (例: ~/projects): ~/projects
 ```
 
+> **注意**: API サーバー URL と管理画面 URL は別々に入力してください。同一ドメインで Nginx をリバースプロキシとして使用している場合は、どちらも同じ URL（例: `https://your-domain.com`）を入力します。
+
 次に、**JWT トークンの取得**を求められます:
 
-1. `https://your-domain.com` をブラウザで開き、GitHub でログイン
-2. ブラウザの開発者ツール（F12）→ **Application** タブ → **Local Storage**
-3. `token` キーの値をコピー
+1. 管理画面（`https://your-domain.com`）をブラウザで開き、GitHub でログイン
+2. ダッシュボード下部の **「🔑 ローカルエージェント用トークン」** カードを確認
+3. 👁 ボタンでトークンを表示し、📋 ボタンでコピー
 4. ターミナルに貼り付けて Enter
 
 ```

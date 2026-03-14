@@ -46,6 +46,7 @@ export class LocalCopilotExecutor extends EventEmitter {
       cwd: workDir,
       env,
       stdio: ["pipe", "pipe", "pipe"],
+      shell: process.platform === "win32",
     });
 
     const rl = createInterface({ input: this.proc.stdout! });

@@ -222,6 +222,11 @@
 - [x] packages/local-agent/src/agent.ts: ハートビート＋ポーリングメインループ（30秒間隔）
 - [x] packages/local-agent/src/index.ts: CLI エントリーポイント（init/start コマンド）
 
+## catapult-agent NPM パッケージ公開
+
+- [x] packages/local-agent/package.json: keywords・license・repository・homepage・publishConfig・prepublishOnly を追加
+- [x] packages/local-agent/README.md: インストール・セットアップ・コマンド一覧ドキュメント作成
+
 ## 本番運用ドキュメント
 
 - [x] docs/operations.md: サーバー導入・Slack/Discord Bot パーミッション設定・ローカルエージェント設定・日常運用・トラブルシューティング・バックアップ手順を網羅した運用マニュアル作成
