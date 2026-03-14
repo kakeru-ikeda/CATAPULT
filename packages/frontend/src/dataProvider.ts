@@ -10,10 +10,8 @@ const httpClient = (url: string, options: Parameters<typeof fetchUtils.fetchJson
   return fetchUtils.fetchJson(url, { ...options, headers });
 };
 
-const basePath = (import.meta.env.VITE_API_URL as string | undefined) ??
+const basePath =
+  (import.meta.env.VITE_API_URL as string | undefined) ??
   import.meta.env.BASE_URL.replace(/\/$/, "");
 
-export const dataProvider = simpleRestProvider(
-  `${basePath}/api`,
-  httpClient,
-);
+export const dataProvider = simpleRestProvider(`${basePath}/api`, httpClient);

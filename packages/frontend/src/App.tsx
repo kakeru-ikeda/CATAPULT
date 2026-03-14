@@ -30,9 +30,8 @@ import { MySkills, MySkillEdit } from "./pages/user/MySkills.js";
 const basename = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export const App = () => (
-  <BrowserRouter>
+  <BrowserRouter basename={basename}>
     <Admin
-      basename={basename}
       dataProvider={dataProvider}
       authProvider={authProvider}
       dashboard={Dashboard}
@@ -41,47 +40,51 @@ export const App = () => (
       {(permissions) => (
         <>
           {/* 管理者モード */}
-        {permissions === "ADMIN" && (
-          <>
-            <Resource name="users" list={UserList} edit={UserEdit} />
-            <Resource name="jobs/all" list={AdminJobList} show={JobShow} />
-            <Resource name="mcp-tools/global" list={McpToolConfig} />
-            <Resource name="skills/global" list={GlobalSkillConfig} edit={GlobalSkillEdit} />
-            <Resource
-              name="instructions/global"
-              list={GlobalInstructionConfig}
-              edit={GlobalInstructionEdit}
-            />
-          </>
-        )}
-        {/* 利用者モード */}
-        <Resource name="jobs" list={MyJobs} show={JobShow} />
-        <Resource name="instructions" list={MyInstructions} />
-        <Resource name="mcp-tools" list={McpToolSettings} />
-        <Resource name="skills" list={MySkills} edit={MySkillEdit} />
-        {/* グローバル設定の閲覧（一般ユーザー） */}
-        {permissions !== "ADMIN" && (
-          <>
-            <Resource
-              name="instructions/global"
-              list={GlobalInstructionsView}
-              show={GlobalInstructionShow}
-            />
-            <Resource name="mcp-tools/global" list={GlobalMcpToolsView} show={GlobalMcpToolShow} />
-            <Resource name="skills/global" list={GlobalSkillsView} show={GlobalSkillShow} />
-          </>
-        )}
-        <CustomRoutes noLayout>
-          <Route path="/auth/callback" element={<AuthCallback />} />
-        </CustomRoutes>
-        <CustomRoutes>
-          <Route path="/account-link" element={<AccountLink />} />
           {permissions === "ADMIN" && (
-            <Route path="/system-settings" element={<SystemSettings />} />
+            <>
+              <Resource name="users" list={UserList} edit={UserEdit} />
+              <Resource name="jobs/all" list={AdminJobList} show={JobShow} />
+              <Resource name="mcp-tools/global" list={McpToolConfig} />
+              <Resource name="skills/global" list={GlobalSkillConfig} edit={GlobalSkillEdit} />
+              <Resource
+                name="instructions/global"
+                list={GlobalInstructionConfig}
+                edit={GlobalInstructionEdit}
+              />
+            </>
           )}
-        </CustomRoutes>
-      </>
-    )}
-  </Admin>
+          {/* 利用者モード */}
+          <Resource name="jobs" list={MyJobs} show={JobShow} />
+          <Resource name="instructions" list={MyInstructions} />
+          <Resource name="mcp-tools" list={McpToolSettings} />
+          <Resource name="skills" list={MySkills} edit={MySkillEdit} />
+          {/* グローバル設定の閲覧（一般ユーザー） */}
+          {permissions !== "ADMIN" && (
+            <>
+              <Resource
+                name="instructions/global"
+                list={GlobalInstructionsView}
+                show={GlobalInstructionShow}
+              />
+              <Resource
+                name="mcp-tools/global"
+                list={GlobalMcpToolsView}
+                show={GlobalMcpToolShow}
+              />
+              <Resource name="skills/global" list={GlobalSkillsView} show={GlobalSkillShow} />
+            </>
+          )}
+          <CustomRoutes noLayout>
+            <Route path="/auth/callback" element={<AuthCallback />} />
+          </CustomRoutes>
+          <CustomRoutes>
+            <Route path="/account-link" element={<AccountLink />} />
+            {permissions === "ADMIN" && (
+              <Route path="/system-settings" element={<SystemSettings />} />
+            )}
+          </CustomRoutes>
+        </>
+      )}
+    </Admin>
   </BrowserRouter>
 );

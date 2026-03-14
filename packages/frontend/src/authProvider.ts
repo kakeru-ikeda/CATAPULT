@@ -1,6 +1,7 @@
 import type { AuthProvider } from "react-admin";
 
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ??
+const API_URL =
+  (import.meta.env.VITE_API_URL as string | undefined) ??
   import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export const authProvider: AuthProvider = {
