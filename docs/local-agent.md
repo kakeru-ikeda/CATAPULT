@@ -28,13 +28,17 @@
 ```
 ① Slack/Discord でメンション
      ↓
-② Bot: GET /api/agents/me → エージェント ONLINE 確認
+② Bot: GET /api/agents/me → ONLINE のエージェント一覧を取得
      ↓
 ③ Slack モーダル: 実行モード選択（サーバー or ローカル）
+     ┌ ONLINE エージェントが 0 台 → 「サーバー実行」のみ表示
+     ├ ONLINE エージェントが 1 台 → 「サーバー実行 / ローカル実行（マシン名）」を表示
+     └ ONLINE エージェントが 2 台以上 → 「サーバー実行 / どのマシンで実行するか」を選択
      ↓
-④ Bot: DB に Job 作成 (executionMode=LOCAL) ※BullMQ には積まない
+④ Bot: DB に Job 作成 (executionMode=LOCAL, localAgentId=選択した agentId)
+        ※BullMQ には積まない
      ↓
-⑤ local-agent (ユーザーの PC): ハートビート応答に pendingJobId が入る
+⑤ local-agent (対象 PC): ハートビート応答に自分宛ての pendingJobId が入る
      ↓
 ⑥ local-agent: POST /api/agents/jobs/claim → ジョブ情報取得
      ↓
@@ -70,7 +74,8 @@ enum ExecutionMode {
 
 model LocalAgent {
   id              String      @id @default(cuid())
-  userId          String      @unique
+  userId          String      // @unique を外して 1ユーザー複数エージェントに対応
+  name            String      // マシン識別名（例: "MacBook Pro", "Desktop"）
   workspaceRoot   String      // "~/projects" など親フォルダ
   status          AgentStatus @default(OFFLINE)
   lastHeartbeatAt DateTime?
@@ -125,6 +130,7 @@ model User {
 ```typescript
 // Request
 interface RegisterAgentRequest {
+  name: string; // マシン識別名（例: "MacBook Pro"、省略時は OS hostname を使用）
   workspaceRoot: string; // 例: "~/projects"
 }
 
@@ -151,13 +157,16 @@ interface HeartbeatResponse {
 #### `GET /api/agents/me`
 
 ```typescript
-// Response
-interface AgentMeResponse {
-  id: string;
-  status: "ONLINE" | "OFFLINE";
-  workspaceRoot: string;
-  lastHeartbeatAt: string | null; // ISO 8601
-}
+// Response（複数エージェントを配列で返す）
+type AgentMeResponse = {
+  agents: {
+    id: string;
+    name: string; // マシン識別名
+    status: "ONLINE" | "OFFLINE";
+    workspaceRoot: string;
+    lastHeartbeatAt: string | null; // ISO 8601
+  }[];
+};
 ```
 
 #### `GET /api/agents`（管理者のみ）
@@ -168,6 +177,7 @@ interface AgentListResponse {
   agents: {
     id: string;
     userId: string;
+    name: string; // マシン識別名
     userSlackId?: string;
     userDiscordId?: string;
     status: "ONLINE" | "OFFLINE";
@@ -262,10 +272,13 @@ packages/local-agent/
 
 ### 設定ファイル仕様 `~/.catapult/config.json`
 
+`agentToken` は PC ごとに異なるため、マシンごとに独立した設定ファイルを持つ。
+
 ```json
 {
   "apiUrl": "https://your-catapult-server.com",
   "agentToken": "cat_agent_xxxxxxxxxxxx",
+  "name": "MacBook Pro",
   "workspaceRoot": "~/projects"
 }
 ```
@@ -402,11 +415,15 @@ $ npx catapult-agent init
 
 対話形式で以下を入力:
 1. CATAPULT サーバーの URL
-2. ローカルのワークスペース親フォルダ（例: ~/projects）
+2. このマシンの名前（デフォルト: OS の hostname）
+   例: "MacBook Pro"、"Desktop-Ubuntu" など
+   ※ Slack/Discord のエージェント選択 UI でこの名前が表示される
+3. ローカルのワークスペース親フォルダ（例: ~/projects）
    ※この配下のすべての git リポジトリが対象になる
 
 処理:
 - POST /api/agents/register を呼び出して agentToken を取得
+  （同じユーザーが複数回 init しても別エージェントとして登録される）
 - ~/.catapult/config.json に保存
 ```
 
@@ -425,26 +442,36 @@ $ npx catapult-agent init
 **変更後のフロー:**
 
 ```
-メンション → リポジトリ選択 → 実行モード選択（エージェント ONLINE 時のみ表示）
+メンション → リポジトリ選択 → 実行モード選択（ONLINE エージェントが 1 台以上の時のみ表示）
                                     → ブランチ選択 + 着地期待値選択 → submitJob
 ```
 
 ### 実行モード選択 UI の仕様
 
-- `GET /api/agents/me` で ONLINE の場合のみ選択肢を表示
-- OFFLINE または未登録の場合は選択肢を表示しない（サーバー実行のみ）
-- ローカル実行選択時、「見つからない場合は自動でサーバー実行に切り替わります」と表示
+- `GET /api/agents/me` で ONLINE エージェント数に応じて以下のように分岐する
+- **0 台**: 選択肢を表示しない（サーバー実行のみ。UI 変更なし）
+- **1 台**: 「サーバー実行 / ローカル実行（マシン名）」の 2 択を表示
+- **2 台以上**: 「サーバー実行 / ローカル実行（マシンを選択）」を表示し、ローカル選択後にどのエージェントか選択させる
+- ローカル実行選択時、「リポジトリが見つからない場合は自動でサーバー実行に切り替わります」と表示
 
 Slack モーダルに追加するブロック（`interactive.ts`）:
 
 ```
+【ONLINE 1 台の場合】
 実行環境
 ○ 🖥️ サーバー実行（デフォルト）
-● 💻 ローカル実行
+○ 💻 ローカル実行（MacBook Pro）
+  （見つからない場合は自動でサーバー実行に切り替わります）
+
+【ONLINE 2 台以上の場合】
+実行環境
+○ 🖥️ サーバー実行（デフォルト）
+○ 💻 ローカル実行
+  実行マシン: [MacBook Pro ▼]  ← static_select で選択
   （見つからない場合は自動でサーバー実行に切り替わります）
 ```
 
-Discord の場合は `StringSelectMenu` で同様に実装。
+Discord の場合は `StringSelectMenu` で同様に実装。サーバーを選択肢の先頭に置き、以降に各 ONLINE エージェントを並べる（最大 24 台 + サーバーで合計 25 件以内）。
 
 ### `submitJob` の分岐（`task.ts`）
 
@@ -455,6 +482,7 @@ Discord の場合は `StringSelectMenu` で同様に実装。
 // task.ts 変更イメージ
 if (executionMode === "LOCAL") {
   // BullMQ には積まず DB にのみ保存
+  // localAgentId = ユーザーが選択したエージェントの ID
   await prisma.job.create({
     data: { ...jobData, executionMode: "LOCAL", localAgentId },
   });
@@ -464,6 +492,9 @@ if (executionMode === "LOCAL") {
 }
 ```
 
+> **注意**: ハートビートの `pendingJobId` は `localAgentId` が自分の `agentId` と一致するジョブのみ返す。
+> 複数台が同時に起動していても、それぞれ別のジョブを受け取る。
+
 ---
 
 ## 7. 管理画面への統合
@@ -472,18 +503,23 @@ if (executionMode === "LOCAL") {
 
 `packages/frontend/src/pages/admin/UserList.tsx` に `LocalAgentStatusField` コンポーネントを追加:
 
-- 🟢 オンライン（workspaceRoot を表示）
-- 🔴 オフライン
-- 未登録
+- 登録されているすべてのエージェントをリスト表示
+- 各エージェントについて 🟢 オンライン / 🔴 オフライン を表示
+- 未登録の場合は「未登録」と表示
 
 ```tsx
 const LocalAgentStatusField = ({ record }: { record: User }) => {
-  const agent = record.localAgents?.[0];
-  if (!agent) return <span>未登録</span>;
-  if (agent.status === "ONLINE") {
-    return <span>🟢 オンライン ({agent.workspaceRoot})</span>;
-  }
-  return <span>🔴 オフライン</span>;
+  const agents = record.localAgents ?? [];
+  if (agents.length === 0) return <span>未登録</span>;
+  return (
+    <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+      {agents.map((agent) => (
+        <li key={agent.id}>
+          {agent.status === "ONLINE" ? "🟢" : "🔴"} {agent.name} ({agent.workspaceRoot})
+        </li>
+      ))}
+    </ul>
+  );
 };
 ```
 
@@ -491,15 +527,15 @@ const LocalAgentStatusField = ({ record }: { record: User }) => {
 
 `packages/frontend/src/pages/user/Dashboard.tsx` にエージェント状態カードを追加:
 
-- ステータス（ONLINE / OFFLINE）
-- workspaceRoot
-- 最終ハートビート時刻
-- 未登録の場合はセットアップ導線を表示
+- 登録されているすべてのエージェントを一覧表示（マシン名・ステータス・workspaceRoot・最終ハートビート時刻）
+- ONLINE のエージェントが 1 台以上あればローカル実行が利用可能な旨を表示
+- 未登録または全台 OFFLINE の場合はセットアップ導線を表示
 
 ```tsx
 const AgentStatusCard = () => {
-  // GET /api/agents/me を呼び出す
-  // 未登録の場合は "npx catapult-agent init" の手順を案内
+  // GET /api/agents/me を呼び出し agents 配列を取得
+  // agents.length === 0 → "npx catapult-agent init" の手順を案内
+  // agents.length > 0 → 各エージェントのステータスをカード表示
 };
 ```
 
@@ -532,6 +568,6 @@ const AgentStatusCard = () => {
 
 - ローカルエージェントへの `agentToken` の安全な受け渡し方法（初回登録フロー詳細）
 - ハートビート途絶時の OFFLINE 判定タイムアウト値（暫定: 最終ハートビートから 90 秒）
-- 1 ユーザーが複数の `workspaceRoot` を持ちたい場合の対応（将来対応）
 - ローカル実行時のジョブキャンセル方法（現状の BullMQ 経由のキャンセルが使えない）
 - `maxDepth=4` の妥当性（深すぎるとスキャンが遅い、浅すぎると見つからない。現在は仕様内でも暫定値として記載）
+- 同一ユーザーが登録したエージェント台数の上限（スパム防止のため API 側で上限を設けることを検討）

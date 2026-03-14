@@ -213,17 +213,23 @@ export function createWorker(): Worker<JobData> {
 
         const prUrl = extractPrUrl(events);
 
-        // Copilot CLI v1.x では assistant.message の content に最終サマリーが含まれる
-        const lastAssistantMsg = [...events]
-          .reverse()
-          .find(
-            (e) =>
+        // Copilot CLI v1.x では assistant.message の content に最終サマリーが含まれる。
+        // copilot は最後に「完了しました」等の短いメタメッセージを出す傾向があるため、
+        // last ではなく最も長い assistant.message を採用する。
+        const assistantContents = events
+          .filter(
+            (e): e is typeof e & { data: { content: string } } =>
               e.type === "assistant.message" &&
               typeof e.data?.content === "string" &&
-              e.data.content.trim(),
-          );
+              e.data.content.trim().length > 0,
+          )
+          .map((e) => e.data.content);
+        const longestContent = assistantContents.reduce<string | undefined>(
+          (best, cur) => (best === undefined || cur.length > best.length ? cur : best),
+          undefined,
+        );
         const summary =
-          lastAssistantMsg?.data?.content ??
+          longestContent ??
           events.find((e) => e.type === "done")?.summary ??
           "タスクが完了しました";
 

@@ -44,6 +44,8 @@ async function submitDiscordJob(
   branch: string,
   deliverableType: DeliverableType,
   message: Message,
+  executionMode: "SERVER" | "LOCAL" = "SERVER",
+  localAgentId?: string,
 ): Promise<void> {
   try {
     await jobGuard.check(user.id, repo);
@@ -85,15 +87,23 @@ async function submitDiscordJob(
             : deliverableType === "commit_only"
               ? "COMMIT_ONLY"
               : "REVIEW",
+      executionMode: executionMode === "LOCAL" && localAgentId ? "LOCAL" : "SERVER",
+      ...(executionMode === "LOCAL" && localAgentId ? { localAgentId } : {}),
     },
   });
 
-  const bullJob = await jobQueue.add("execute", { jobId: job.id });
-  const { position } = await getQueuePosition(bullJob.id ?? job.id);
-  const queueText =
-    position <= 1
-      ? `📋 ジョブをキューに追加しました\nすぐに開始します`
-      : `📋 ジョブをキューに追加しました\n現在の待ち順位: ${position}番目`;
+  let queueText: string;
+  if (executionMode === "LOCAL" && localAgentId) {
+    // ローカル実行: BullMQ には積まない
+    queueText = `💻 ローカルエージェントにジョブを割り当てました\nエージェントが起動していれば自動的に開始します`;
+  } else {
+    const bullJob = await jobQueue.add("execute", { jobId: job.id });
+    const { position } = await getQueuePosition(bullJob.id ?? job.id);
+    queueText =
+      position <= 1
+        ? `📋 ジョブをキューに追加しました\nすぐに開始します`
+        : `📋 ジョブをキューに追加しました\n現在の待ち順位: ${position}番目`;
+  }
 
   const replyMsg = await message.reply(queueText);
 
@@ -138,7 +148,13 @@ export async function showDiscordDeliverableSelect(
   message: Message,
   replyMsg: Message,
 ): Promise<void> {
-  const select = new StringSelectMenuBuilder()
+  // ONLINE なローカルエージェントを取得
+  const onlineAgents = await prisma.localAgent.findMany({
+    where: { userId: user.id, status: "ONLINE" },
+    select: { id: true, name: true },
+  });
+
+  const deliverableSelect = new StringSelectMenuBuilder()
     .setCustomId(`deliverable_select:${message.id}`)
     .setPlaceholder("完了形式を選択...")
     .addOptions([
@@ -164,35 +180,67 @@ export async function showDiscordDeliverableSelect(
       },
     ]);
 
-  const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
+  const deliverableRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+    deliverableSelect,
+  );
+
+  const components: ActionRowBuilder<StringSelectMenuBuilder>[] = [deliverableRow];
+
+  if (onlineAgents.length > 0) {
+    const executionModeSelect = new StringSelectMenuBuilder()
+      .setCustomId(`execution_mode_select:${message.id}`)
+      .setPlaceholder("実行環境を選択...")
+      .addOptions([
+        {
+          label: "🖥️ サーバー実行",
+          value: "server",
+          description: "CATAPULT サーバーで実行（デフォルト）",
+          default: true,
+        },
+        ...onlineAgents.slice(0, 24).map((a) => ({
+          label: `💻 ローカル実行（${a.name}）`,
+          value: `local:${a.id}`,
+          description: "ローカルの開発環境で実行",
+        })),
+      ]);
+    const executionModeRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+      executionModeSelect,
+    );
+    components.push(executionModeRow);
+  }
 
   await replyMsg.edit({
     content:
       repo === ""
         ? `💬 **チャットエージェントモード** でどの形式で完了しますか？\n**タスク:** ${task}`
         : `**${repo}** \`${branch}\` でどの形式で完了しますか？\n**タスク:** ${task}`,
-    components: [row],
+    components,
   });
+
+  // 選択状態
+  let selectedDeliverable: DeliverableType | null = null;
+  let selectedExecutionMode: string = "server";
 
   const collector = replyMsg.createMessageComponentCollector({
     filter: (i) => i.user.id === message.author.id,
     time: 2 * 60 * 1000,
-    max: 1,
   });
 
   collector.on("collect", (interaction) => {
     void (async () => {
       if (!interaction.isStringSelectMenu()) return;
       await interaction.deferUpdate();
-      const deliverableType = interaction.values[0] as DeliverableType;
-      await replyMsg.edit({
-        content:
-          repo === ""
-            ? `✅ ジョブを投入しました: 💬 チャットエージェントモード (${DELIVERABLE_LABELS[deliverableType]})`
-            : `✅ ジョブを投入しました: \`${repo}\` - \`${branch}\` (${DELIVERABLE_LABELS[deliverableType]})`,
-        components: [],
-      });
-      await submitDiscordJob(user, task, repo, branch, deliverableType, message);
+
+      if (interaction.customId.startsWith("deliverable_select:")) {
+        selectedDeliverable = interaction.values[0] as DeliverableType;
+      } else if (interaction.customId.startsWith("execution_mode_select:")) {
+        selectedExecutionMode = interaction.values[0] ?? "server";
+      }
+
+      // 両方選択済みになったら（またはエージェントなし＝deliverableのみ）ジョブ投入
+      if (selectedDeliverable !== null) {
+        collector.stop("selected");
+      }
     })();
   });
 
@@ -202,6 +250,30 @@ export async function showDiscordDeliverableSelect(
         content: "タイムアウトしました。再度メンションしてください。",
         components: [],
       });
+      return;
+    }
+
+    if (reason === "selected" && selectedDeliverable !== null) {
+      const isLocal = selectedExecutionMode.startsWith("local:");
+      const localAgentId = isLocal ? selectedExecutionMode.slice("local:".length) : undefined;
+
+      void replyMsg.edit({
+        content:
+          repo === ""
+            ? `✅ ジョブを投入しました: 💬 チャットエージェントモード (${DELIVERABLE_LABELS[selectedDeliverable]})`
+            : `✅ ジョブを投入しました: \`${repo}\` - \`${branch}\` (${DELIVERABLE_LABELS[selectedDeliverable]})`,
+        components: [],
+      });
+      void submitDiscordJob(
+        user,
+        task,
+        repo,
+        branch,
+        selectedDeliverable,
+        message,
+        isLocal ? "LOCAL" : "SERVER",
+        localAgentId,
+      );
     }
   });
 }

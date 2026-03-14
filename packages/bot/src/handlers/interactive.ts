@@ -49,6 +49,12 @@ export function registerInteractiveHandlers(app: App): void {
     });
     if (!accountLink) return;
 
+    // ONLINE のローカルエージェントを取得
+    const onlineAgents = await prisma.localAgent.findMany({
+      where: { userId: accountLink.user.id, status: "ONLINE" },
+      select: { id: true, name: true },
+    });
+
     // リポジトリ「なし」選択: チャットエージェントモード
     if (repo === "__none__") {
       await client.views.open({
@@ -144,6 +150,38 @@ export function registerInteractiveHandlers(app: App): void {
             },
             label: { type: "plain_text", text: "完了形式" },
           },
+          ...(onlineAgents.length > 0
+            ? [
+                {
+                  type: "input" as const,
+                  block_id: "execution_mode_block",
+                  optional: false,
+                  element: {
+                    type: "static_select" as const,
+                    action_id: "execution_mode_select",
+                    initial_option: {
+                      text: { type: "plain_text" as const, text: "🖥️ サーバー実行" },
+                      value: "server",
+                    },
+                    options: [
+                      {
+                        text: { type: "plain_text" as const, text: "🖥️ サーバー実行" },
+                        value: "server",
+                      },
+                      ...onlineAgents.map((a) => ({
+                        text: { type: "plain_text" as const, text: `💻 ローカル実行（${a.name}）` },
+                        value: `local:${a.id}`,
+                      })),
+                    ],
+                  },
+                  label: { type: "plain_text" as const, text: "実行環境" },
+                  hint: {
+                    type: "plain_text" as const,
+                    text: "ローカル実行: リポジトリが見つからない場合は自動でサーバー実行に切り替わります",
+                  },
+                },
+              ]
+            : []),
         ],
       },
     });
@@ -180,6 +218,13 @@ export function registerInteractiveHandlers(app: App): void {
       : ((view.state.values["deliverable_block"]?.["deliverable_select"]?.selected_option?.value ??
           "pr") as DeliverableType);
 
+    // 実行モード選択（optional: ONLINEエージェントがいない場合はブロック自体なし）
+    const executionModeValue =
+      view.state.values["execution_mode_block"]?.["execution_mode_select"]?.selected_option
+        ?.value ?? "server";
+    const isLocal = executionModeValue.startsWith("local:");
+    const localAgentId = isLocal ? executionModeValue.slice("local:".length) : undefined;
+
     const user = await prisma.user.findUniqueOrThrow({ where: { id: metadata.userId } });
 
     // モーダルでブランチ＋完了形式を選択済み = 確認完了 → 直接ジョブ投入
@@ -192,6 +237,8 @@ export function registerInteractiveHandlers(app: App): void {
       channelId: metadata.channelId,
       threadTs: metadata.threadTs,
       slackUserId: metadata.slackUserId,
+      executionMode: isLocal ? "LOCAL" : "SERVER",
+      localAgentId,
     });
   });
 

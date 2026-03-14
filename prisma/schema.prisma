@@ -46,6 +46,18 @@ enum SkillScope {
     USER // ユーザー個人のスキル、そのユーザーのジョブのみ
 }
 
+// ローカルエージェントステータス
+enum AgentStatus {
+    ONLINE
+    OFFLINE
+}
+
+// ジョブ実行モード
+enum ExecutionMode {
+    SERVER
+    LOCAL
+}
+
 // ユーザー
 model User {
     id                    String    @id @default(cuid())
@@ -64,6 +76,7 @@ model User {
     mcpTools     McpTool[]
     instructions Instruction[]
     skills       Skill[]
+    localAgents  LocalAgent[]
 }
 
 // Slack/Discord アカウント連携
@@ -97,15 +110,18 @@ model Job {
     channelId       String? // Slack/Discord のチャンネル ID
     parentJobId     String? // 前回ジョブへの参照（軽量セッション）
     deliverableType DeliverableType @default(PR)
+    executionMode   ExecutionMode   @default(SERVER)
+    localAgentId    String? // ローカルエージェント実行時のエージェント ID
     startedAt       DateTime?
     completedAt     DateTime?
     createdAt       DateTime        @default(now())
     updatedAt       DateTime        @updatedAt
 
-    user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    logs     JobLog[]
-    parent   Job?     @relation("JobSession", fields: [parentJobId], references: [id])
-    children Job[]    @relation("JobSession")
+    user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+    logs       JobLog[]
+    parent     Job?        @relation("JobSession", fields: [parentJobId], references: [id])
+    children   Job[]       @relation("JobSession")
+    localAgent LocalAgent? @relation(fields: [localAgentId], references: [id])
 }
 
 // ジョブログ（イベントログ）
@@ -175,4 +191,20 @@ model Instruction {
     user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
     @@index([isGlobal, isActive])
+}
+
+// ローカルエージェント
+model LocalAgent {
+    id              String      @id @default(cuid())
+    userId          String
+    name            String // マシン識別名（例: "MacBook Pro", "Desktop"）
+    workspaceRoot   String // "~/projects" など親フォルダ
+    status          AgentStatus @default(OFFLINE)
+    lastHeartbeatAt DateTime?
+    agentToken      String      @unique
+    createdAt       DateTime    @default(now())
+    updatedAt       DateTime    @updatedAt
+
+    user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+    jobs Job[]
 }
