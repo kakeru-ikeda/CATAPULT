@@ -49,6 +49,38 @@ export function registerInteractiveHandlers(app: App): void {
     });
     if (!accountLink) return;
 
+    // リポジトリ「なし」選択: チャットエージェントモード
+    if (repo === "__none__") {
+      await client.views.open({
+        trigger_id: body.trigger_id,
+        view: {
+          type: "modal",
+          callback_id: "select_branch",
+          private_metadata: JSON.stringify({
+            userId: accountLink.user.id,
+            repo: "",
+            task,
+            channelId,
+            threadTs,
+            slackUserId,
+          }),
+          title: { type: "plain_text", text: "タスク設定" },
+          submit: { type: "plain_text", text: "実行" },
+          close: { type: "plain_text", text: "キャンセル" },
+          blocks: [
+            {
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text: "💬 *チャットエージェントモード*\nリポジトリを指定せず、コードベースに囚われないエージェントとして実行します。",
+              },
+            },
+          ],
+        },
+      });
+      return;
+    }
+
     await recordRecentRepo(accountLink.user.id, repo);
     const branches = await listBranches(accountLink.user.id, repo);
 
@@ -133,12 +165,20 @@ export function registerInteractiveHandlers(app: App): void {
     const metadata = JSON.parse(view.private_metadata) as BranchModalMetadata;
     const branchValue =
       view.state.values["branch_block"]?.["branch_select"]?.selected_option?.value;
-    if (!branchValue) return;
 
-    await recordRecentBranch(metadata.userId, metadata.repo, branchValue);
+    // チャットエージェントモード（リポジトリなし）の場合はブランチ選択をスキップ
+    const isChatMode = metadata.repo === "";
+    if (!branchValue && !isChatMode) return;
 
-    const deliverableValue = (view.state.values["deliverable_block"]?.["deliverable_select"]
-      ?.selected_option?.value ?? "pr") as DeliverableType;
+    if (!isChatMode) {
+      await recordRecentBranch(metadata.userId, metadata.repo, branchValue!);
+    }
+
+    // チャットエージェントモードはdeliverable選択なし → report 固定
+    const deliverableValue: DeliverableType = isChatMode
+      ? "report"
+      : ((view.state.values["deliverable_block"]?.["deliverable_select"]?.selected_option?.value ??
+          "pr") as DeliverableType);
 
     const user = await prisma.user.findUniqueOrThrow({ where: { id: metadata.userId } });
 
@@ -146,7 +186,7 @@ export function registerInteractiveHandlers(app: App): void {
     await submitJob({
       userId: user.id,
       repo: metadata.repo,
-      branch: branchValue,
+      branch: branchValue ?? "",
       task: metadata.task,
       deliverableType: deliverableValue,
       channelId: metadata.channelId,

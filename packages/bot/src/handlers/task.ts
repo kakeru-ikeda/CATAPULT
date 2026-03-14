@@ -91,12 +91,16 @@ export async function submitJob(ctx: TaskContext): Promise<void> {
 
   const bullJob = await jobQueue.add("execute", { jobId: job.id });
 
-  const { position, estimatedWaitMinutes } = await getQueuePosition(bullJob.id ?? job.id);
+  const { position } = await getQueuePosition(bullJob.id ?? job.id);
+  const queueText =
+    position <= 1
+      ? `📋 ジョブをキューに追加しました\nすぐに開始します`
+      : `📋 ジョブをキューに追加しました\n現在の待ち順位: ${position}番目`;
 
   await client.chat.postMessage({
     channel: ctx.channelId,
     thread_ts: ctx.threadTs,
-    text: `📋 ジョブをキューに追加しました\n現在の待ち順位: ${position}番目\n推定待ち時間: 約${estimatedWaitMinutes}分`,
+    text: queueText,
   });
 
   // JobStreamRelay を起動してリアルタイム進捗を投稿

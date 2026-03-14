@@ -84,6 +84,7 @@ services:
       REDIS_URL: redis://redis:6379
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
       NODE_ENV: production
+    restart: unless-stopped
     deploy:
       replicas: 2
     depends_on:
