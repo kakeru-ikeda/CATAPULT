@@ -14,6 +14,18 @@ const redis = new Redis(process.env["REDIS_URL"]!);
 
 const router: Router = createRouter();
 
+function mapDeliverableType(
+  deliverableType: "PR" | "REPORT" | "COMMIT_ONLY" | "REVIEW",
+): "pr" | "report" | "commit_only" | "review" {
+  return deliverableType === "PR"
+    ? "pr"
+    : deliverableType === "REPORT"
+      ? "report"
+      : deliverableType === "COMMIT_ONLY"
+        ? "commit_only"
+        : "review";
+}
+
 // agentToken から LocalAgent を取得するヘルパー
 async function getAgentByToken(
   req: Request,
@@ -188,6 +200,7 @@ router.post("/jobs/claim", async (req: Request, res: Response) => {
     branch: job.branch,
     prompt: job.prompt,
     githubToken,
+    deliverableType: mapDeliverableType(job.deliverableType),
   });
 });
 
@@ -201,7 +214,7 @@ router.post("/jobs/:jobId/events", async (req: Request, res: Response) => {
   // ジョブが自分宛てか確認
   const job = await prisma.job.findFirst({
     where: { id: jobId, localAgentId: agent.id },
-    select: { id: true },
+    select: { id: true, repository: true },
   });
 
   if (!job) {
@@ -258,7 +271,7 @@ router.post("/jobs/:jobId/complete", async (req: Request, res: Response) => {
 
   const job = await prisma.job.findFirst({
     where: { id: jobId, localAgentId: agent.id },
-    select: { id: true },
+    select: { id: true, repository: true },
   });
 
   if (!job) {
@@ -273,7 +286,7 @@ router.post("/jobs/:jobId/complete", async (req: Request, res: Response) => {
     orderBy: { id: "asc" },
   });
 
-  const { prUrl, summary } = extractCompletionFromLogs(logs);
+  const { prUrl, summary } = extractCompletionFromLogs(logs, job.repository);
 
   await prisma.job.update({
     where: { id: jobId },

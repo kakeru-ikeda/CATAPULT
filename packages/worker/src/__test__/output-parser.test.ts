@@ -56,6 +56,22 @@ describe("extractPrUrl", () => {
     expect(extractPrUrl(events)).toBe("https://github.com/owner/repo/pull/10");
   });
 
+  it("対象リポジトリと一致しない PR URL は無視する", () => {
+    const events: CopilotEvent[] = [
+      {
+        type: "assistant.message",
+        data: {
+          content:
+            "PR を作成しました https://github.com/owner/repo/pull/1 https://github.com/kakeru-ikeda/CATAPULT/pull/42",
+        },
+      },
+    ];
+
+    expect(extractPrUrl(events, "kakeru-ikeda/CATAPULT")).toBe(
+      "https://github.com/kakeru-ikeda/CATAPULT/pull/42",
+    );
+  });
+
   it("PR URL がない場合は undefined を返す", () => {
     const events: CopilotEvent[] = [{ type: "agent_step", content: "作業中" }];
     expect(extractPrUrl(events)).toBeUndefined();

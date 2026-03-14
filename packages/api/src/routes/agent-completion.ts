@@ -1,4 +1,5 @@
 const PR_URL_PATTERN = /https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+/;
+const PR_URL_GLOBAL_PATTERN = /https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+/gu;
 
 interface JobLogRecord {
   eventType: string;
@@ -10,7 +11,42 @@ interface ParsedLogEvent {
   data?: { content?: string };
 }
 
-export function extractCompletionFromLogs(logs: JobLogRecord[]): {
+function normalizeRepository(repository: string): string {
+  return repository
+    .trim()
+    .replace(/\.git$/u, "")
+    .toLowerCase();
+}
+
+function isExpectedPrUrl(prUrl: string, repository?: string): boolean {
+  if (!repository) return true;
+  const capturedRepository = prUrl.match(
+    /^https:\/\/github\.com\/([^/]+\/[^/]+)\/pull\/\d+$/u,
+  )?.[1];
+  return (
+    capturedRepository !== undefined &&
+    capturedRepository.toLowerCase() === normalizeRepository(repository)
+  );
+}
+
+function findExpectedPrUrl(content: string, repository?: string): string | undefined {
+  if (!repository) {
+    return content.match(PR_URL_PATTERN)?.[0];
+  }
+
+  for (const match of content.matchAll(PR_URL_GLOBAL_PATTERN)) {
+    if (match[0] && isExpectedPrUrl(match[0], repository)) {
+      return match[0];
+    }
+  }
+
+  return undefined;
+}
+
+export function extractCompletionFromLogs(
+  logs: JobLogRecord[],
+  repository?: string,
+): {
   prUrl?: string;
   summary: string;
 } {
@@ -21,7 +57,7 @@ export function extractCompletionFromLogs(logs: JobLogRecord[]): {
     try {
       const event = JSON.parse(log.content) as ParsedLogEvent;
 
-      if (event.prUrl) {
+      if (event.prUrl && isExpectedPrUrl(event.prUrl, repository)) {
         prUrl = event.prUrl;
       } else if (
         log.eventType === "assistant.message" &&
@@ -29,9 +65,9 @@ export function extractCompletionFromLogs(logs: JobLogRecord[]): {
         event.data.content.trim()
       ) {
         assistantContents.push(event.data.content);
-        const match = event.data.content.match(PR_URL_PATTERN);
-        if (match) {
-          prUrl = match[0];
+        const matchedPrUrl = findExpectedPrUrl(event.data.content, repository);
+        if (matchedPrUrl) {
+          prUrl = matchedPrUrl;
         }
       }
     } catch {

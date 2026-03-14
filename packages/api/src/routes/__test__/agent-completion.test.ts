@@ -57,4 +57,29 @@ describe("extractCompletionFromLogs", () => {
       summary: "タスクが完了しました",
     });
   });
+
+  it("指定リポジトリと一致しない PR URL は採用しない", () => {
+    const result = extractCompletionFromLogs(
+      [
+        {
+          eventType: "done",
+          content: JSON.stringify({ prUrl: "https://github.com/owner/repo/pull/99" }),
+        },
+        {
+          eventType: "assistant.message",
+          content: JSON.stringify({
+            data: {
+              content: "PR を作成しました https://github.com/kakeru-ikeda/CATAPULT/pull/42",
+            },
+          }),
+        },
+      ],
+      "kakeru-ikeda/CATAPULT",
+    );
+
+    expect(result).toEqual({
+      prUrl: "https://github.com/kakeru-ikeda/CATAPULT/pull/42",
+      summary: "PR を作成しました https://github.com/kakeru-ikeda/CATAPULT/pull/42",
+    });
+  });
 });

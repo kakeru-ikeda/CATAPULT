@@ -222,6 +222,7 @@
 - [x] packages/local-agent/src/executor.ts: clone なし LocalCopilotExecutor
 - [x] packages/local-agent/src/agent.ts: ハートビート＋ポーリングメインループ（30秒間隔）
 - [x] packages/local-agent/src/index.ts: CLI エントリーポイント（init/start コマンド）
+- [x] packages/local-agent/src/executor.ts / packages/api/src/routes/agents.ts: ローカル実行の PR 作成でも interactive で選んだ repository をプロンプトと PR URL 判定に反映
 
 ## catapult-agent NPM パッケージ公開
 

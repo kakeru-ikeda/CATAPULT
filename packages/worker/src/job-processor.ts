@@ -211,7 +211,7 @@ export function createWorker(): Worker<JobData> {
                   : "review",
         });
 
-        const prUrl = extractPrUrl(events);
+        const prUrl = extractPrUrl(events, dbJob.repository);
 
         // Copilot CLI v1.x では assistant.message の content に最終サマリーが含まれる。
         const summary =

@@ -200,6 +200,7 @@ interface ClaimJobResponse {
   branch: string;
   prompt: string;
   githubToken: string; // 一時トークン（実行用）
+  deliverableType: "pr" | "report" | "commit_only" | "review";
 }
 ```
 

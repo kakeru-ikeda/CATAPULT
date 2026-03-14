@@ -1,6 +1,6 @@
 import type { AgentConfig } from "./config.js";
 import { EventReporter } from "./event-reporter.js";
-import { LocalCopilotExecutor } from "./executor.js";
+import { LocalCopilotExecutor, type DeliverableType } from "./executor.js";
 import { resolveWorkspacePath } from "./workspace-resolver.js";
 
 interface HeartbeatResponse {
@@ -14,6 +14,7 @@ interface ClaimJobResponse {
   branch: string;
   prompt: string;
   githubToken: string;
+  deliverableType: DeliverableType;
 }
 
 interface CompleteJobRequest {
@@ -107,6 +108,7 @@ async function runJob(config: AgentConfig, jobId: string): Promise<void> {
         repository: job.repository,
         branch: job.branch,
         githubToken: job.githubToken,
+        deliverableType: job.deliverableType,
       },
       reporter,
     );
