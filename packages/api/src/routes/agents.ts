@@ -242,6 +242,8 @@ router.post("/jobs/claim", async (req: Request, res: Response) => {
     branch: job.branch,
     prompt: job.prompt,
     deliverableType: job.deliverableType.toLowerCase(),
+    branchMode:
+      job.parentJobId !== null && job.deliverableType === "COMMIT_ONLY" ? "existing" : "new",
     instructions,
     conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
     githubToken,

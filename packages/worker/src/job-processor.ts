@@ -221,6 +221,10 @@ export function createWorker(): Worker<JobData> {
           mcpConfig,
           instructions,
           conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
+          branchMode:
+            dbJob.parentJobId !== null && dbJob.deliverableType === "COMMIT_ONLY"
+              ? "existing"
+              : "new",
           deliverableType:
             dbJob.deliverableType === "PR"
               ? "pr"

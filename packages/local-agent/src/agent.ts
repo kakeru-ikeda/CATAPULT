@@ -19,6 +19,7 @@ interface ClaimJobResponse {
   branch: string;
   prompt: string;
   githubToken: string;
+  branchMode?: "new" | "existing";
   deliverableType?: "pr" | "report" | "commit_only" | "review";
   instructions?: string | null;
   conversationHistory?: Array<{ prompt: string; summary: string; prUrl?: string }>;
@@ -127,6 +128,7 @@ async function runJob(config: AgentConfig, jobId: string): Promise<void> {
         repository: job.repository,
         branch: job.branch,
         githubToken: job.githubToken,
+        branchMode: job.branchMode,
         deliverableType: job.deliverableType as "pr" | "report" | "commit_only" | "review",
         instructions: job.instructions ?? undefined,
         conversationHistory: job.conversationHistory,

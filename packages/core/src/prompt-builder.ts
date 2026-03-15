@@ -33,9 +33,8 @@ export function buildPrompt(options: ExecuteOptions): string {
   const jobShortId = options.jobId.slice(-8);
   const deliverableType = options.deliverableType ?? "pr";
 
-  // commit_only かつ既存の Copilot 作業ブランチを継続する場合は新ブランチを作らせない
-  const isExistingBranchContinuation =
-    deliverableType === "commit_only" && options.branch.startsWith("copilot/");
+  // branchMode が明示されていれば優先。未指定時は旧来の挙動（new）
+  const isExistingBranchContinuation = options.branchMode === "existing";
 
   const branchInstruction = !options.repository
     ? ""

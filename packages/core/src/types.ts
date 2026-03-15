@@ -19,6 +19,8 @@ export interface ExecuteOptions {
   githubToken: string;
   mcpConfig?: object;
   instructions?: string;
+  /** 新ブランチを作成するか、既存ブランチで続行するかの明示的指定。未指定時は new として扱う */
+  branchMode?: "new" | "existing";
   /** スレッド内の過去ターン履歴（時系列昇順）。空配列または undefined の場合は省略 */
   conversationHistory?: ConversationTurn[];
   deliverableType?: DeliverableType;
