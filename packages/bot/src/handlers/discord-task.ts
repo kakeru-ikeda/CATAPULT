@@ -5,8 +5,11 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  ModalBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
+  TextInputBuilder,
+  TextInputStyle,
   type Message,
 } from "discord.js";
 
@@ -21,6 +24,12 @@ import {
 import { JobGuard, JobLimitError } from "../services/job-guard.js";
 import { fetchAvailableModels } from "../services/models.js";
 import { getQueuePosition } from "../services/queue-status.js";
+
+import {
+  buildPromptWithPreferredBranchName,
+  normalizePreferredBranchName,
+  validatePreferredBranchName,
+} from "./branch-preference.js";
 
 const prisma = new PrismaClient();
 const jobQueue = new Queue("jobs", { connection: { url: process.env["REDIS_URL"]! } });
@@ -60,6 +69,7 @@ async function submitDiscordJob(
   executionMode: "SERVER" | "LOCAL" = "SERVER",
   localAgentId?: string,
   model?: string,
+  preferredBranchName?: string,
 ): Promise<void> {
   try {
     await jobGuard.check(user.id, repo);
@@ -90,7 +100,10 @@ async function submitDiscordJob(
       userId: user.id,
       repository: repo,
       branch,
-      prompt: task,
+      prompt: buildPromptWithPreferredBranchName(
+        task,
+        deliverableType === "pr" ? preferredBranchName : undefined,
+      ),
       status: "PENDING",
       platform: "DISCORD",
       channelId: message.channelId,
@@ -182,130 +195,171 @@ export async function showDiscordDeliverableSelect(
 
   const availableModels = await fetchAvailableModels();
   const hasPr = !!sessionCtx?.prUrl;
-
-  const deliverableSelect = new StringSelectMenuBuilder()
-    .setCustomId(`deliverable_select:${message.id}`)
-    .setPlaceholder("完了形式を選択...")
-    .addOptions(
-      hasPr
-        ? [
-            {
-              label: "✅ このPRに追加コミット",
-              value: "commit_only",
-              description: "このPRに追加コミットを積む（推奨）",
-            },
-            {
-              label: "🔍 調査・報告",
-              value: "report",
-              description: "コードを変更せず調査・報告",
-            },
-            {
-              label: "🔀 別PR を作成",
-              value: "pr",
-              description: "別のPRを新たに作成する",
-            },
-            {
-              label: "👁 コードレビュー",
-              value: "review",
-              description: "変更なし、レビュー結果を投稿",
-            },
-          ]
-        : [
-            {
-              label: "🔀 PR 作成",
-              value: "pr",
-              description: "変更してプルリクエストを作成",
-            },
-            {
-              label: "🔍 調査・報告",
-              value: "report",
-              description: "コードを変更せず調査・報告",
-            },
-            {
-              label: "📝 コミットのみ",
-              value: "commit_only",
-              description: "ブランチにコミット。PR なし",
-            },
-            {
-              label: "👁 コードレビュー",
-              value: "review",
-              description: "変更なし、レビュー結果を投稿",
-            },
-          ],
-    );
-
-  const deliverableRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-    deliverableSelect,
-  );
-
   type AnyRow = ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>;
-  const components: AnyRow[] = [deliverableRow as AnyRow];
-
-  if (onlineAgents.length > 0) {
-    const executionModeSelect = new StringSelectMenuBuilder()
-      .setCustomId(`execution_mode_select:${message.id}`)
-      .setPlaceholder("実行環境を選択...")
-      .addOptions([
-        {
-          label: "🖥️ サーバー実行",
-          value: "server",
-          description: "CATAPULT サーバーで実行（デフォルト）",
-        },
-        ...onlineAgents.slice(0, 24).map((a) => ({
-          label: `💻 ローカル実行（${a.name}）`,
-          value: `local:${a.id}`,
-          description: "ローカルの開発環境で実行",
-        })),
-      ]);
-    const executionModeRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-      executionModeSelect,
-    );
-    components.push(executionModeRow as AnyRow);
-  }
-
-  if (availableModels.length > 0) {
-    const modelSelect = new StringSelectMenuBuilder()
-      .setCustomId(`model_select:${message.id}`)
-      .addOptions([
-        {
-          label: "🤖 Auto",
-          value: "auto",
-          description: "デフォルト（Copilot が自動選択）",
-          default: true,
-        },
-        ...availableModels.slice(0, 24).map((m) => ({
-          label: m.displayName ?? m.name,
-          value: m.name,
-        })),
-      ]);
-    components.splice(
-      components.length - 1,
-      0,
-      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(modelSelect) as AnyRow,
-    );
-  }
-
-  // 実行開始ボタン（選択後にクリックで投入）
-  const startButton = new ButtonBuilder()
-    .setCustomId(`start_job:${message.id}`)
-    .setLabel("🚀 実行開始")
-    .setStyle(ButtonStyle.Primary);
-  components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(startButton) as AnyRow);
-
-  await replyMsg.edit({
-    content:
-      repo === ""
-        ? `💬 **チャットエージェントモード** でどの形式で完了しますか？\n**タスク:** ${task}`
-        : hasPr
-          ? `**${repo}** \`${branch}\` の継続（[PR を確認](${sessionCtx.prUrl})\uff09\n**タスク:** ${task}`
-          : `**${repo}** \`${branch}\` でどの形式で完了しますか？\n**タスク:** ${task}`,
-    components,
-  });
 
   // 選択状態
   let selectedDeliverable: DeliverableType | null = null;
   let selectedExecutionMode: string = "server";
   let selectedModel: string | undefined = undefined;
+  let selectedPreferredBranchName: string | undefined = undefined;
+
+  function buildDeliverableRow(): AnyRow {
+    const options = hasPr
+      ? [
+          {
+            label: "✅ このPRに追加コミット",
+            value: "commit_only",
+            description: "このPRに追加コミットを積む（推奨）",
+            default: selectedDeliverable === "commit_only",
+          },
+          {
+            label: "🔍 調査・報告",
+            value: "report",
+            description: "コードを変更せず調査・報告",
+            default: selectedDeliverable === "report",
+          },
+          {
+            label: "🔀 別PR を作成",
+            value: "pr",
+            description: "別のPRを新たに作成する",
+            default: selectedDeliverable === "pr",
+          },
+          {
+            label: "👁 コードレビュー",
+            value: "review",
+            description: "変更なし、レビュー結果を投稿",
+            default: selectedDeliverable === "review",
+          },
+        ]
+      : [
+          {
+            label: "🔀 PR 作成",
+            value: "pr",
+            description: "変更してプルリクエストを作成",
+            default: selectedDeliverable === "pr",
+          },
+          {
+            label: "🔍 調査・報告",
+            value: "report",
+            description: "コードを変更せず調査・報告",
+            default: selectedDeliverable === "report",
+          },
+          {
+            label: "📝 コミットのみ",
+            value: "commit_only",
+            description: "ブランチにコミット。PR なし",
+            default: selectedDeliverable === "commit_only",
+          },
+          {
+            label: "👁 コードレビュー",
+            value: "review",
+            description: "変更なし、レビュー結果を投稿",
+            default: selectedDeliverable === "review",
+          },
+        ];
+
+    const deliverableSelect = new StringSelectMenuBuilder()
+      .setCustomId(`deliverable_select:${message.id}`)
+      .setPlaceholder("完了形式を選択...")
+      .addOptions(options);
+
+    return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+      deliverableSelect,
+    ) as AnyRow;
+  }
+
+  function buildContent(): string {
+    const preferredBranchLine =
+      selectedDeliverable === "pr"
+        ? `\n**作業ブランチ名（任意）:** ${
+            selectedPreferredBranchName ? `\`${selectedPreferredBranchName}\`` : "未設定"
+          }`
+        : "";
+
+    return (
+      (repo === ""
+        ? `💬 **チャットエージェントモード** でどの形式で完了しますか？\n**タスク:** ${task}`
+        : hasPr
+          ? `**${repo}** \`${branch}\` の継続（[PR を確認](${sessionCtx.prUrl})）\n**タスク:** ${task}`
+          : `**${repo}** \`${branch}\` でどの形式で完了しますか？\n**タスク:** ${task}`) +
+      preferredBranchLine
+    );
+  }
+
+  function buildComponents(): AnyRow[] {
+    const rows: AnyRow[] = [buildDeliverableRow()];
+
+    if (onlineAgents.length > 0) {
+      const executionModeSelect = new StringSelectMenuBuilder()
+        .setCustomId(`execution_mode_select:${message.id}`)
+        .setPlaceholder("実行環境を選択...")
+        .addOptions([
+          {
+            label: "🖥️ サーバー実行",
+            value: "server",
+            description: "CATAPULT サーバーで実行（デフォルト）",
+            default: selectedExecutionMode === "server",
+          },
+          ...onlineAgents.slice(0, 24).map((a) => ({
+            label: `💻 ローカル実行（${a.name}）`,
+            value: `local:${a.id}`,
+            description: "ローカルの開発環境で実行",
+            default: selectedExecutionMode === `local:${a.id}`,
+          })),
+        ]);
+      rows.push(
+        new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+          executionModeSelect,
+        ) as AnyRow,
+      );
+    }
+
+    if (availableModels.length > 0) {
+      const modelSelect = new StringSelectMenuBuilder()
+        .setCustomId(`model_select:${message.id}`)
+        .addOptions([
+          {
+            label: "🤖 Auto",
+            value: "auto",
+            description: "デフォルト（Copilot が自動選択）",
+            default: selectedModel === undefined,
+          },
+          ...availableModels.slice(0, 24).map((m) => ({
+            label: m.displayName ?? m.name,
+            value: m.name,
+            default: selectedModel === m.name,
+          })),
+        ]);
+      rows.push(
+        new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(modelSelect) as AnyRow,
+      );
+    }
+
+    if (selectedDeliverable === "pr") {
+      const branchButton = new ButtonBuilder()
+        .setCustomId(`preferred_branch:${message.id}`)
+        .setLabel(
+          selectedPreferredBranchName
+            ? `🌿 ${selectedPreferredBranchName}`
+            : "🌿 作業ブランチ名を設定",
+        )
+        .setStyle(ButtonStyle.Secondary);
+      rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(branchButton) as AnyRow);
+    }
+
+    const startButton = new ButtonBuilder()
+      .setCustomId(`start_job:${message.id}`)
+      .setLabel("🚀 実行開始")
+      .setStyle(ButtonStyle.Primary);
+    rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(startButton) as AnyRow);
+
+    return rows;
+  }
+
+  await replyMsg.edit({
+    content: buildContent(),
+    components: buildComponents(),
+  });
 
   const collector = replyMsg.createMessageComponentCollector({
     filter: (i) => i.user.id === message.author.id,
@@ -315,6 +369,54 @@ export async function showDiscordDeliverableSelect(
   collector.on("collect", (interaction) => {
     void (async () => {
       if (interaction.isButton()) {
+        if (interaction.customId.startsWith("preferred_branch:")) {
+          const modal = new ModalBuilder()
+            .setCustomId(`preferred_branch_modal:${message.id}`)
+            .setTitle("作業ブランチ名")
+            .addComponents(
+              new ActionRowBuilder<TextInputBuilder>().addComponents(
+                new TextInputBuilder()
+                  .setCustomId("preferred_branch_input")
+                  .setLabel("作業ブランチ名（任意）")
+                  .setRequired(false)
+                  .setStyle(TextInputStyle.Short)
+                  .setPlaceholder("copilot/job-xxxxxx/fix-login-bug")
+                  .setValue(selectedPreferredBranchName ?? ""),
+              ),
+            );
+          await interaction.showModal(modal);
+
+          try {
+            const modalSubmission = await interaction.awaitModalSubmit({
+              filter: (submitted) =>
+                submitted.user.id === message.author.id &&
+                submitted.customId === `preferred_branch_modal:${message.id}`,
+              time: 2 * 60 * 1000,
+            });
+            const submittedBranchName =
+              modalSubmission.fields.getTextInputValue("preferred_branch_input");
+            const preferredBranchError = validatePreferredBranchName(submittedBranchName);
+
+            if (preferredBranchError) {
+              await modalSubmission.reply({
+                content: `⚠️ ${preferredBranchError}`,
+                ephemeral: true,
+              });
+              return;
+            }
+
+            selectedPreferredBranchName = normalizePreferredBranchName(submittedBranchName);
+            await modalSubmission.deferUpdate();
+            await replyMsg.edit({
+              content: buildContent(),
+              components: buildComponents(),
+            });
+          } catch {
+            return;
+          }
+          return;
+        }
+
         if (interaction.customId.startsWith("start_job:")) {
           if (selectedDeliverable === null) {
             await interaction.reply({
@@ -333,6 +435,10 @@ export async function showDiscordDeliverableSelect(
 
       if (interaction.customId.startsWith("deliverable_select:")) {
         selectedDeliverable = interaction.values[0] as DeliverableType;
+        await replyMsg.edit({
+          content: buildContent(),
+          components: buildComponents(),
+        });
       } else if (interaction.customId.startsWith("execution_mode_select:")) {
         selectedExecutionMode = interaction.values[0] ?? "server";
       } else if (interaction.customId.startsWith("model_select:")) {
@@ -372,6 +478,7 @@ export async function showDiscordDeliverableSelect(
         isLocal ? "LOCAL" : "SERVER",
         localAgentId,
         selectedModel,
+        selectedDeliverable === "pr" ? selectedPreferredBranchName : undefined,
       );
     }
   });

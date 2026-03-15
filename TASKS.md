@@ -258,6 +258,7 @@
 - [x] `packages/worker/src/utils.ts`: `parseAvailableModels()` 追加
 - [x] `packages/worker/src/index.ts`: 起動時に `syncCopilotModels()` 呼び出し
 - [x] `packages/worker/src/executor.ts`: `--model` フラグを動的組み立て
+- [x] `packages/bot`: PR 作成時のみ任意の作業ブランチ名入力を表示し、調査/レビューでは非表示にする
 - [x] `packages/local-agent/src/executor.ts`: `--model` フラグを動的組み立て
 - [x] `packages/api/src/routes/models.ts`: `GET /api/models` エンドポイント新規作成
 - [x] `packages/api/src/index.ts`: `modelsRouter` 追加

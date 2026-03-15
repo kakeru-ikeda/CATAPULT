@@ -10,6 +10,8 @@ import { JobGuard, JobLimitError } from "../services/job-guard.js";
 import { JobStreamRelay } from "../services/job-stream.js";
 import { getQueuePosition } from "../services/queue-status.js";
 
+import { buildPromptWithPreferredBranchName } from "./branch-preference.js";
+
 const prisma = new PrismaClient();
 const jobQueue = new Queue("jobs", { connection: { url: process.env["REDIS_URL"]! } });
 const jobGuard = new JobGuard();
@@ -38,6 +40,7 @@ export interface TaskContext {
   executionMode?: "SERVER" | "LOCAL";
   localAgentId?: string;
   model?: string;
+  preferredBranchName?: string;
 }
 
 export async function submitJob(ctx: TaskContext): Promise<void> {
@@ -78,7 +81,10 @@ export async function submitJob(ctx: TaskContext): Promise<void> {
       userId: ctx.userId,
       repository: ctx.repo,
       branch: ctx.branch,
-      prompt: ctx.task,
+      prompt: buildPromptWithPreferredBranchName(
+        ctx.task,
+        ctx.deliverableType === "pr" ? ctx.preferredBranchName : undefined,
+      ),
       status: "PENDING",
       platform: "SLACK",
       channelId: ctx.channelId,
