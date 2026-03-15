@@ -12,8 +12,8 @@ describe("buildPrompt", () => {
       githubToken: "token",
       deliverableType: "pr",
     });
-    expect(prompt).toContain("`myorg/myrepo`");
-    expect(prompt).toContain("プルリクエストを作成");
+    expect(prompt).toContain("PR 作成");
+    expect(prompt).toContain("gh pr create");
   });
 
   it("PR モードでリポジトリが空の場合、デフォルトの PR 指示が使われる", () => {
