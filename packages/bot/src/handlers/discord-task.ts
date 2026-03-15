@@ -525,7 +525,13 @@ export async function handleDiscordTask(user: User, text: string, message: Messa
     }
   }
 
-  // スレッド継続パターン: 同一チャンネル（スレッド）の直前 COMPLETED ジョブからリポジトリ・ブランチを引き継ぐ
+  // スレッド継続パターン: スレッド内からのメンション時のみ、直前 COMPLETED ジョブからリポジトリ・ブランチを引き継ぐ
+  // 親チャンネルからのメンションは常に新規扱いにする
+  if (!message.channel.isThread()) {
+    await showDiscordRepoSelect(user, text, message);
+    return;
+  }
+
   const sessionId = getSessionId(message);
   const sessionJob = await prisma.job.findFirst({
     where: { userId: user.id, threadId: sessionId, status: "COMPLETED" },
