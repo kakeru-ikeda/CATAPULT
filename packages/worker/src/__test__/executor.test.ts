@@ -1,17 +1,7 @@
-import type { ExecuteOptions } from "@catapult/core";
+import { buildPrompt, type ExecuteOptions } from "@catapult/core";
 import { describe, it, expect } from "vitest";
 
-import { CopilotExecutor } from "../executor.js";
-
-// buildPrompt は private だが型安全にアクセスするためのヘルパー
-function callBuildPrompt(options: ExecuteOptions): string {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  return (new CopilotExecutor() as any).buildPrompt(options) as string;
-}
-
-describe("CopilotExecutor.buildPrompt", () => {
-  const buildPrompt = callBuildPrompt;
-
+describe("buildPrompt", () => {
   it("PR モードでリポジトリが指定されている場合、リポジトリ名を含む PR 指示が生成される", () => {
     const prompt = buildPrompt({
       jobId: "test-job-id-12345678",
