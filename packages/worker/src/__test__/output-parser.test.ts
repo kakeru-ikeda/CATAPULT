@@ -67,6 +67,22 @@ describe("extractPrUrl", () => {
 });
 
 describe("extractFinalAssistantMessage", () => {
+  it("送信用メッセージ セクションを優先して返す", () => {
+    const events: CopilotEvent[] = [
+      {
+        type: "assistant.message",
+        data: {
+          content:
+            "作業内容をまとめました。\n\n## 送信用メッセージ\nログイン不具合を修正し、関連テストも更新しました。\nnpm test で確認済みです。",
+        },
+      },
+    ];
+
+    expect(extractFinalAssistantMessage(events)).toBe(
+      "ログイン不具合を修正し、関連テストも更新しました。\nnpm test で確認済みです。",
+    );
+  });
+
   it("最後の非空 assistant.message を返す", () => {
     const events: CopilotEvent[] = [
       { type: "assistant.message", data: { content: "途中経過" } },
@@ -82,5 +98,14 @@ describe("extractFinalAssistantMessage", () => {
     const events: CopilotEvent[] = [{ type: "done", summary: "完了しました" }];
 
     expect(extractFinalAssistantMessage(events)).toBeUndefined();
+  });
+
+  it("送信用メッセージ が無ければ最後の assistant.message 全体を返す", () => {
+    const events: CopilotEvent[] = [
+      { type: "assistant.message", data: { content: "途中経過" } },
+      { type: "assistant.message", data: { content: "最終サマリー" } },
+    ];
+
+    expect(extractFinalAssistantMessage(events)).toBe("最終サマリー");
   });
 });
