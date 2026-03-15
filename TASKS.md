@@ -73,6 +73,12 @@
 - [x] イベントフォーマット (agent_step→💭, tool_call→🔧, shell→📟, file_edit→📝, error→❌, done→✅)
 - [x] 🛑 停止ボタン (インラインボタン → Redis キャンセル信号)
 - [x] cancelled イベント処理
+- [x] Slack Canvas 対応 (1スレッド1Canvas・リッチマークダウン描画)
+  - [x] ThreadCanvas DB モデル（platform/channelId/threadId で一意管理）
+  - [x] CanvasManager サービス（getOrCreateThreadCanvas / updateThreadCanvas / buildCanvasMarkdown）
+  - [x] JobStreamRelay Canvas 統合（進捗・完了・エラーを Canvas に反映）
+  - [x] Canvas URL をキュー通知メッセージに含める
+  - [x] docs/slack-canvas.md 設計書
 
 ## Phase 4: Discord Bot 実装
 

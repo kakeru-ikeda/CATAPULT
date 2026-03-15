@@ -124,6 +124,19 @@ model Job {
     localAgent LocalAgent? @relation(fields: [localAgentId], references: [id])
 }
 
+// スレッド Canvas（Slack: 1スレッド 1 Canvas）
+model ThreadCanvas {
+    id        String   @id @default(cuid())
+    platform  Platform
+    channelId String
+    threadId  String
+    canvasId  String   @unique // Slack が発行する canvas_id (F... 形式)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([platform, channelId, threadId])
+}
+
 // ジョブログ（イベントログ）
 model JobLog {
     id        String   @id @default(cuid())
