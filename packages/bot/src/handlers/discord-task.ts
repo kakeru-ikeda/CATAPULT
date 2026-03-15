@@ -265,12 +265,12 @@ export async function showDiscordDeliverableSelect(
   if (availableModels.length > 0) {
     const modelSelect = new StringSelectMenuBuilder()
       .setCustomId(`model_select:${message.id}`)
-      .setPlaceholder("モデルを選択...")
       .addOptions([
         {
           label: "🤖 Auto",
           value: "auto",
           description: "デフォルト（Copilot が自動選択）",
+          default: true,
         },
         ...availableModels.slice(0, 24).map((m) => ({
           label: m.displayName ?? m.name,
