@@ -328,9 +328,10 @@ router.post("/jobs/:jobId/complete", async (req: Request, res: Response) => {
   // extractCompletionFromLogs ではなく、ローカルエージェントから送られた summary を優先使用
   let finalSummary = summary;
   let finalPrUrl = prUrl;
+  let finalWorkerBranch: string | undefined;
 
   if (!finalSummary) {
-    // 互換性のため（未対応エージェントや summary が取れなかった場合）、JobLog からも試みる
+    // 互换性のため（未対応エージェントや summary が取れなかった場合）、JobLog からも試みる
     const logs = await prisma.jobLog.findMany({
       where: { jobId },
       select: { eventType: true, content: true },
@@ -339,6 +340,16 @@ router.post("/jobs/:jobId/complete", async (req: Request, res: Response) => {
     const extracted = extractCompletionFromLogs(logs);
     finalSummary = extracted.summary;
     finalPrUrl = finalPrUrl ?? extracted.prUrl;
+    finalWorkerBranch = extracted.workerBranch;
+  } else {
+    // summary が直接送信された場合も JobLog から workerBranch だけ抽出する
+    const logs = await prisma.jobLog.findMany({
+      where: { jobId },
+      select: { eventType: true, content: true },
+      orderBy: { id: "asc" },
+    });
+    const extracted = extractCompletionFromLogs(logs);
+    finalWorkerBranch = extracted.workerBranch;
   }
 
   await prisma.job.update({
@@ -347,6 +358,7 @@ router.post("/jobs/:jobId/complete", async (req: Request, res: Response) => {
       status,
       completedAt: new Date(),
       prUrl: finalPrUrl ?? null,
+      workerBranch: finalWorkerBranch ?? null,
       resultSummary: finalSummary,
       ...(error ? { output: error } : {}),
     },

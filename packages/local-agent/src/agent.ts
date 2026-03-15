@@ -1,7 +1,12 @@
+import { exec } from "child_process";
+import { promisify } from "util";
+
 import type { AgentConfig } from "./config.js";
 import { EventReporter } from "./event-reporter.js";
 import { LocalCopilotExecutor } from "./executor.js";
 import { resolveWorkspacePath } from "./workspace-resolver.js";
+
+const execAsync = promisify(exec);
 
 interface HeartbeatResponse {
   status: "ok";
@@ -99,6 +104,14 @@ async function runJob(config: AgentConfig, jobId: string): Promise<void> {
   }
 
   console.info(`[agent] Using workspace: ${workDir}`);
+
+  // 指定ブランチに切り替え（workerBranch が設定されている場合はそのブランチで継続）
+  try {
+    await execAsync(`git -C "${workDir}" checkout "${job.branch}"`);
+    console.info(`[agent] Checked out branch: ${job.branch}`);
+  } catch {
+    console.warn(`[agent] Could not checkout ${job.branch}, using current branch`);
+  }
 
   const reporter = new EventReporter(job.jobId, config);
   const executor = new LocalCopilotExecutor();

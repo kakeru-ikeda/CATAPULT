@@ -1,4 +1,5 @@
 const PR_URL_PATTERN = /https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+/;
+const WORKER_BRANCH_PATTERN = /copilot\/job-[a-z0-9]{8}\/[\w./-]+/;
 
 interface JobLogRecord {
   eventType: string;
@@ -12,9 +13,11 @@ interface ParsedLogEvent {
 
 export function extractCompletionFromLogs(logs: JobLogRecord[]): {
   prUrl?: string;
+  workerBranch?: string;
   summary: string;
 } {
   let prUrl: string | undefined;
+  let workerBranch: string | undefined;
   const assistantContents: string[] = [];
 
   for (const log of logs) {
@@ -34,6 +37,12 @@ export function extractCompletionFromLogs(logs: JobLogRecord[]): {
           prUrl = match[0];
         }
       }
+      // 標準出力から作業ブランチ名を抽出
+      const raw = log.content;
+      const branchMatch = raw.match(WORKER_BRANCH_PATTERN);
+      if (branchMatch) {
+        workerBranch = branchMatch[0];
+      }
     } catch {
       // パース失敗は無視
     }
@@ -41,6 +50,7 @@ export function extractCompletionFromLogs(logs: JobLogRecord[]): {
 
   return {
     prUrl,
+    workerBranch,
     summary: assistantContents.at(-1) ?? "タスクが完了しました",
   };
 }

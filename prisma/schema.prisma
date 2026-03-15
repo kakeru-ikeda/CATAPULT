@@ -105,6 +105,7 @@ model Job {
     output          String? // 最終出力
     resultSummary   String? // 完了サマリー
     prUrl           String? // 作成された PR の URL
+    workerBranch    String? // Copilot が作成した実際の作業ブランチ (e.g. copilot/job-XXXX/feature)
     platform        Platform
     threadId        String? // Slack/Discord のスレッド ID
     channelId       String? // Slack/Discord のチャンネル ID

@@ -478,17 +478,18 @@ export async function handleDiscordTask(user: User, text: string, message: Messa
   const sessionJob = await prisma.job.findFirst({
     where: { userId: user.id, threadId: message.channelId, status: "COMPLETED" },
     orderBy: { completedAt: "desc" },
-    select: { repository: true, branch: true },
+    select: { repository: true, branch: true, workerBranch: true },
   });
   if (sessionJob) {
+    const continueBranch = sessionJob.workerBranch ?? sessionJob.branch;
     const replyMsg = await message.reply({
-      content: `🔄 前回の **${sessionJob.repository}** \`${sessionJob.branch}\` を継続します。どの形式で完了しますか？`,
+      content: `🔄 前回の **${sessionJob.repository}** \`${continueBranch}\` を継続します。どの形式で完了しますか？`,
     });
     await showDiscordDeliverableSelect(
       user,
       text,
       sessionJob.repository,
-      sessionJob.branch,
+      continueBranch,
       message,
       replyMsg,
     );

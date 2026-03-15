@@ -2,7 +2,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 
 import type { CopilotEvent } from "@catapult/core";
-import { extractFinalAssistantMessage, extractPrUrl } from "@catapult/core";
+import { extractFinalAssistantMessage, extractPrUrl, extractWorkerBranch } from "@catapult/core";
 import { PrismaClient } from "@prisma/client";
 import { Worker, type Job } from "bullmq";
 import { Redis } from "ioredis";
@@ -232,6 +232,7 @@ export function createWorker(): Worker<JobData> {
         });
 
         const prUrl = extractPrUrl(events);
+        const workerBranch = extractWorkerBranch(events, jobId);
 
         // ファイルベースでの最終回答の取得を優先する
         let summary: string;
@@ -256,6 +257,7 @@ export function createWorker(): Worker<JobData> {
             status: "COMPLETED",
             completedAt: new Date(),
             prUrl,
+            workerBranch: workerBranch ?? null,
             resultSummary: summary,
           },
         });

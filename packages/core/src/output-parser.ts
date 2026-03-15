@@ -38,6 +38,26 @@ export function extractPrUrl(events: CopilotEvent[]): string | undefined {
   return undefined;
 }
 
+export function extractWorkerBranch(events: CopilotEvent[], jobId: string): string | undefined {
+  const jobShortId = jobId.slice(-8);
+  const BRANCH_PATTERN = new RegExp(`(copilot/job-${jobShortId}/[\\w./-]+)`);
+  for (const event of events) {
+    if (event.stdout) {
+      const m = event.stdout.match(BRANCH_PATTERN);
+      if (m?.[1]) return m[1];
+    }
+    if (event.data?.result?.content) {
+      const m = String(event.data.result.content).match(BRANCH_PATTERN);
+      if (m?.[1]) return m[1];
+    }
+    if (event.type === "assistant.message" && typeof event.data?.content === "string") {
+      const m = event.data.content.match(BRANCH_PATTERN);
+      if (m?.[1]) return m[1];
+    }
+  }
+  return undefined;
+}
+
 export function extractFinalAssistantMessage(events: CopilotEvent[]): string | undefined {
   const assistantContents = events
     .filter(

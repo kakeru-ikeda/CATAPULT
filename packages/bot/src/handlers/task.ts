@@ -246,13 +246,13 @@ export async function handleTask(
     const sessionJob = await prisma.job.findFirst({
       where: { userId: user.id, threadId: threadTs, status: "COMPLETED" },
       orderBy: { completedAt: "desc" },
-      select: { repository: true, branch: true },
+      select: { repository: true, branch: true, workerBranch: true },
     });
     if (sessionJob) {
       await showConfirmation(
         user,
         sessionJob.repository,
-        sessionJob.branch,
+        sessionJob.workerBranch ?? sessionJob.branch,
         text,
         channelId,
         threadTs,
