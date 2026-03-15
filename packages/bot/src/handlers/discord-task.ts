@@ -290,9 +290,7 @@ export async function showDiscordDeliverableSelect(
     .setCustomId(`start_job:${message.id}`)
     .setLabel("🚀 実行開始")
     .setStyle(ButtonStyle.Primary);
-  components.push(
-    new ActionRowBuilder<ButtonBuilder>().addComponents(startButton) as AnyRow,
-  );
+  components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(startButton) as AnyRow);
 
   await replyMsg.edit({
     content:
