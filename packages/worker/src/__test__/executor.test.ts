@@ -1,4 +1,4 @@
-import { buildPrompt, type ExecuteOptions } from "@catapult/core";
+import { buildPrompt } from "@catapult/core";
 import { describe, it, expect } from "vitest";
 
 describe("buildPrompt", () => {
