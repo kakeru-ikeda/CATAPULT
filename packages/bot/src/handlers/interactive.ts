@@ -49,6 +49,16 @@ export function registerInteractiveHandlers(app: App): void {
     });
     if (!accountLink) return;
 
+    const oneMinuteAgo = new Date(Date.now() - 60_000);
+    await prisma.localAgent.updateMany({
+      where: {
+        userId: accountLink.user.id,
+        status: "ONLINE",
+        lastHeartbeatAt: { not: null, lt: oneMinuteAgo },
+      },
+      data: { status: "OFFLINE" },
+    });
+
     // ONLINE のローカルエージェントを取得
     const onlineAgents = await prisma.localAgent.findMany({
       where: { userId: accountLink.user.id, status: "ONLINE" },

@@ -95,6 +95,16 @@ router.post("/heartbeat", async (req: Request, res: Response) => {
 
 // GET /api/agents/me - 自分のエージェント状態取得
 router.get("/me", authMiddleware, async (req: Request, res: Response) => {
+  const oneMinuteAgo = new Date(Date.now() - 60_000);
+  await prisma.localAgent.updateMany({
+    where: {
+      userId: req.user!.id,
+      status: "ONLINE",
+      lastHeartbeatAt: { not: null, lt: oneMinuteAgo },
+    },
+    data: { status: "OFFLINE" },
+  });
+
   const agents = await prisma.localAgent.findMany({
     where: { userId: req.user!.id },
     select: {
@@ -112,6 +122,12 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
 
 // GET /api/agents - 全エージェント一覧（管理者のみ）
 router.get("/", authMiddleware, adminMiddleware, async (_req: Request, res: Response) => {
+  const oneMinuteAgo = new Date(Date.now() - 60_000);
+  await prisma.localAgent.updateMany({
+    where: { status: "ONLINE", lastHeartbeatAt: { not: null, lt: oneMinuteAgo } },
+    data: { status: "OFFLINE" },
+  });
+
   const agents = await prisma.localAgent.findMany({
     include: {
       user: {

@@ -18,6 +18,8 @@ import {
 import { useEffect, useState } from "react";
 import { Title, useGetList } from "react-admin";
 
+import { API_URL } from "../../dataProvider";
+
 interface Job {
   id: string;
   status: string;
@@ -43,7 +45,7 @@ const AgentStatusCard = () => {
       setLoading(false);
       return;
     }
-    fetch("/api/agents/me", {
+    fetch(`${API_URL}/api/agents/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json() as Promise<{ agents: LocalAgent[] }>)
@@ -75,7 +77,9 @@ const AgentStatusCard = () => {
               variant="body2"
               sx={{ mt: 1, fontFamily: "monospace", bgcolor: "grey.100", p: 1, borderRadius: 1 }}
             >
-              npx catapult-agent init
+              npm install -g catapult-agent
+              <br />
+              catapult-agent init
             </Typography>
             <Typography variant="caption" color="textSecondary">
               を実行してローカルエージェントを登録すると、手元の開発環境でジョブを実行できます

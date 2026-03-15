@@ -148,6 +148,16 @@ export async function showDiscordDeliverableSelect(
   message: Message,
   replyMsg: Message,
 ): Promise<void> {
+  const oneMinuteAgo = new Date(Date.now() - 60_000);
+  await prisma.localAgent.updateMany({
+    where: {
+      userId: user.id,
+      status: "ONLINE",
+      lastHeartbeatAt: { not: null, lt: oneMinuteAgo },
+    },
+    data: { status: "OFFLINE" },
+  });
+
   // ONLINE なローカルエージェントを取得
   const onlineAgents = await prisma.localAgent.findMany({
     where: { userId: user.id, status: "ONLINE" },

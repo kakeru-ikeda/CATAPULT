@@ -14,4 +14,5 @@ const basePath =
   (import.meta.env.VITE_API_URL as string | undefined) ??
   import.meta.env.BASE_URL.replace(/\/$/, "");
 
+export const API_URL = basePath;
 export const dataProvider = simpleRestProvider(`${basePath}/api`, httpClient);

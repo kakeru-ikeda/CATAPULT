@@ -17,8 +17,7 @@ function validateCopilotCli(): void {
     console.error(
       "エラー: GitHub Copilot CLI (copilot) が見つかりません。\n" +
         "以下のコマンドでインストールしてください:\n" +
-        "  npm install -g @githubnext/github-copilot-cli\n" +
-        "インストール後、`github-copilot-cli auth` で認証を行ってください。",
+        "  npm install -g @github/copilot\n",
     );
     process.exit(1);
   }
@@ -101,7 +100,7 @@ program
       console.info(`エージェント ID: ${data.agentId}`);
       console.info(`設定ファイル: ${getConfigPath()}`);
       console.info(`\n以下のコマンドでエージェントを起動できます:`);
-      console.info(`  npx catapult-agent start`);
+      console.info(`  catapult-agent start`);
     } catch (err) {
       console.error("登録中にエラーが発生しました:", err);
       process.exit(1);

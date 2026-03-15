@@ -1,6 +1,6 @@
 {
   "name": "catapult-agent",
-  "version": "1.0.1",
+  "version": "1.0.5",
   "description": "CATAPULT Local Agent - A command-line tool for AI coding assistance",
   "private": false,
   "type": "module",
@@ -16,7 +16,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsc && node -e \"import('fs').then(fs => { const p = './dist/index.js'; const c = fs.readFileSync(p,'utf8'); if(!c.startsWith('#!/')) fs.writeFileSync(p,'#!/usr/bin/env node\\n'+c); require('child_process').execSync('chmod +x '+p); })\"",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --external:commander && chmod +x dist/index.js",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
@@ -43,11 +43,12 @@
     "access": "public"
   },
   "dependencies": {
-    "@catapult/core": "^1.0.0",
     "commander": "^12.0.0"
   },
   "devDependencies": {
+    "@catapult/core": "^1.0.0",
     "@types/node": "^22.0.0",
+    "esbuild": "^0.27.4",
     "typescript": "^5.5.0"
   }
 }
