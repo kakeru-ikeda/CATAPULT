@@ -89,6 +89,8 @@ services:
       REDIS_URL: redis://redis:6379
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
       NODE_ENV: production
+      GITHUB_APP_CLIENT_ID: ${GITHUB_APP_CLIENT_ID}
+      GITHUB_APP_CLIENT_SECRET: ${GITHUB_APP_CLIENT_SECRET}
     restart: unless-stopped
     deploy:
       replicas: 2
