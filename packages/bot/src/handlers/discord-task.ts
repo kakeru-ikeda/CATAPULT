@@ -277,7 +277,11 @@ export async function showDiscordDeliverableSelect(
           value: m.name,
         })),
       ]);
-    components.splice(components.length - 1, 0, new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(modelSelect));
+    components.splice(
+      components.length - 1,
+      0,
+      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(modelSelect),
+    );
   }
 
   await replyMsg.edit({

@@ -56,19 +56,15 @@ export class CopilotExecutor extends EventEmitter {
     );
     console.info(`[Job ${options.jobId}] Command: copilot ${loggableArgs.join(" ")}`);
 
-    this.proc = spawn(
-      "copilot",
-      spawnArgs,
-      {
-        cwd: workDir,
-        env: {
-          ...process.env,
-          GITHUB_TOKEN: options.githubToken,
-          GH_TOKEN: options.githubToken,
-          HOME: homeDir,
-        },
+    this.proc = spawn("copilot", spawnArgs, {
+      cwd: workDir,
+      env: {
+        ...process.env,
+        GITHUB_TOKEN: options.githubToken,
+        GH_TOKEN: options.githubToken,
+        HOME: homeDir,
       },
-    );
+    });
 
     console.info(`[Job ${options.jobId}] Copilot CLI spawned (PID: ${this.proc.pid})`);
 
