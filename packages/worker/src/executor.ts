@@ -36,17 +36,6 @@ export interface CopilotEvent {
 
 export type DeliverableType = "pr" | "report" | "commit_only" | "review";
 
-const SENDABLE_MESSAGE_INSTRUCTION = `## 重要: 最終メッセージの形式
-最後の assistant.message には、Slack / Discord にそのまま送れる完了報告を必ず含めてください。
-末尾に必ず次のセクションを追加し、このセクション単体で送信文として完結させてください。
-
-## 送信用メッセージ
-- 日本語で簡潔かつ自然にまとめる
-- 実施したこと、主要な変更点、確認したテスト結果を含める
-- PR URL や「以上です」のような冗長な締めは含めない
-- 2〜5文程度で、進捗説明ではなく完了報告として書く
-`;
-
 const DELIVERABLE_INSTRUCTIONS: Record<DeliverableType, string> = {
   pr: "",
   report: `## 出力形式: 調査・報告
@@ -189,7 +178,6 @@ export class CopilotExecutor extends EventEmitter {
     return [
       deliverableInstruction,
       branchInstruction,
-      SENDABLE_MESSAGE_INSTRUCTION,
       options.instructions ?? "",
       previousContextSection,
       options.prompt,
