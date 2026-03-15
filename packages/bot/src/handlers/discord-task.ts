@@ -189,7 +189,7 @@ export async function showDiscordDeliverableSelect(
               label: "✅ このPRに追加コミット",
               value: "commit_only",
               description: "このPRに追加コミットを積む（推奨）",
-              default: true,
+
             },
             {
               label: "🔍 調査・報告",
@@ -246,7 +246,6 @@ export async function showDiscordDeliverableSelect(
           label: "🖥️ サーバー実行",
           value: "server",
           description: "CATAPULT サーバーで実行（デフォルト）",
-          default: true,
         },
         ...onlineAgents.slice(0, 24).map((a) => ({
           label: `💻 ローカル実行（${a.name}）`,
