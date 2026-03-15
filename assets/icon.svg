@@ -1,30 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-    <defs>
-        <linearGradient id="catapultGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#4F46E5"/>
-            <stop offset="50%" stop-color="#8B5CF6"/>
-            <stop offset="100%" stop-color="#EC4899"/>
-        </linearGradient>
-        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="8" result="blur"/>
-            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-        </filter>
-    </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- メインオブジェクト用グラデーション (Copilot風のパープル～ブルー) -->
+    <linearGradient id="launchGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
     
-    <!-- Background -->
-    <rect width="512" height="512" fill="#0B0F19" rx="100"/>
-    
-    <!-- Geometric Catapult Base -->
-    <path d="M 160 400 L 256 220 L 352 400 Z" fill="none" stroke="#1E293B" stroke-width="28" stroke-linejoin="round"/>
-    <line x1="200" y1="330" x2="312" y2="330" stroke="#1E293B" stroke-width="28" stroke-linecap="round"/>
+    <!-- 軌跡用グラデーション -->
+    <linearGradient id="trailGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4F46E5" stop-opacity="0" />
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0.8" />
+    </linearGradient>
 
-    <!-- The Arm in Motion -->
-    <line x1="256" y1="330" x2="390" y2="150" stroke="url(#catapultGrad)" stroke-width="32" stroke-linecap="round"/>
+    <!-- シャドウ効果 -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
 
-    <!-- Launch Arc -->
-    <path d="M 140 280 C 200 120 340 90 440 90" fill="none" stroke="#334155" stroke-width="8" stroke-linecap="round" stroke-dasharray="16 16"/>
+  <!-- 背景パネル (ダークテーマの角丸矩形) -->
+  <rect width="512" height="512" rx="112" fill="#0D1117" />
 
-    <!-- Projectile / Payload (Glowing Dot) -->
-    <circle cx="440" cy="90" r="24" fill="#EC4899" filter="url(#glow)"/>
-    <circle cx="440" cy="90" r="16" fill="#FBCFE8"/>
+  <g>
+    <!-- スピードライン/軌跡 -->
+    <line x1="80" y1="432" x2="192" y2="320" stroke="url(#trailGrad)" stroke-width="16" stroke-linecap="round" stroke-dasharray="24 24" />
+
+    <!-- 射出されるシャトル/機体 (抽象化された矢印型紙飛行機モチーフ) -->
+    <path d="M 64 256 L 416 96 L 256 448 L 224 288 Z" fill="url(#launchGrad)" filter="url(#glow)" />
+  </g>
 </svg>

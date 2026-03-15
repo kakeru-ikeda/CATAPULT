@@ -1,13 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
     <defs>
         <linearGradient id="gradText" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stop-color="#4F46E5"/>
             <stop offset="50%" stop-color="#06B6D4"/>
             <stop offset="100%" stop-color="#38BDF8"/>
-        </linearGradient>
-        <linearGradient id="gradArm" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#4F46E5"/>
-            <stop offset="100%" stop-color="#EC4899"/>
         </linearGradient>
         <linearGradient id="launchGrad" x1="0%" y1="100%" x2="100%" y2="0%">
             <stop offset="0%" stop-color="#4F46E5"/>
@@ -27,30 +23,29 @@
     </defs>
     
     <!-- Deep Dark Background with Dot Grid -->
-    <rect width="1280" height="640" fill="#0D1117"/>
-    <rect width="1280" height="640" fill="url(#grid)"/>
+    <rect width="1200" height="630" fill="#0D1117"/>
+    <rect width="1200" height="630" fill="url(#grid)"/>
 
     <!-- Abstract Ambient Glows -->
     <circle cx="150" cy="450" r="300" fill="#4F46E5" opacity="0.15" filter="blur(80px)"/>
-    <circle cx="1050" cy="200" r="350" fill="#06B6D4" opacity="0.15" filter="blur(100px)"/>
+    <circle cx="1000" cy="200" r="350" fill="#06B6D4" opacity="0.15" filter="blur(100px)"/>
 
     <!-- Abstract Catapult Vector Art (Right Side) -->
-    <g transform="translate(740, 40) scale(1.1)">
+    <g transform="translate(680, 40) scale(1.1)">
         <!-- スピードライン/軌跡 -->
         <line x1="80" y1="432" x2="192" y2="320" stroke="url(#trailGrad)" stroke-width="16" stroke-linecap="round" stroke-dasharray="24 24" />
-
         <!-- 射出されるシャトル/機体 (抽象化された矢印型紙飛行機モチーフ) -->
         <path d="M 64 256 L 416 96 L 256 448 L 224 288 Z" fill="url(#launchGrad)" filter="url(#glowDot)" />
     </g>
 
     <!-- Typography -->
-    <text x="120" y="320" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="110" fill="url(#gradText)" letter-spacing="4">CATAPULT</text>
-    <text x="125" y="380" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="500" font-size="36" fill="#8B949E" letter-spacing="1">Autonomy layer for GitHub Copilot</text>
+    <text x="80" y="310" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="110" fill="url(#gradText)" letter-spacing="4">CATAPULT</text>
+    <text x="85" y="370" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="500" font-size="36" fill="#8B949E" letter-spacing="1">Autonomy layer for GitHub Copilot</text>
 
     <!-- Terminal Prompt Decorator -->
-    <rect x="125" y="440" width="380" height="64" rx="12" fill="#0F172A" stroke="#1E293B" stroke-width="2"/>
-    <circle cx="155" cy="472" r="6" fill="#EF4444"/>
-    <circle cx="175" cy="472" r="6" fill="#EAB308"/>
-    <circle cx="195" cy="472" r="6" fill="#22C55E"/>
-    <text x="225" y="479" font-family="monospace" font-size="20" font-weight="600" fill="#38BDF8">@copilot 🚀 deploy</text>
+    <rect x="85" y="430" width="380" height="64" rx="12" fill="#0F172A" stroke="#1E293B" stroke-width="2"/>
+    <circle cx="115" cy="462" r="6" fill="#EF4444"/>
+    <circle cx="135" cy="462" r="6" fill="#EAB308"/>
+    <circle cx="155" cy="462" r="6" fill="#22C55E"/>
+    <text x="185" y="469" font-family="monospace" font-size="20" font-weight="600" fill="#38BDF8">@copilot 🚀 deploy</text>
 </svg>
