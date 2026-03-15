@@ -135,31 +135,6 @@ export function registerInteractiveHandlers(app: App): void {
             },
             label: { type: "plain_text", text: "ブランチ" },
           },
-          {
-            type: "input",
-            block_id: "deliverable_block",
-            element: {
-              type: "static_select",
-              action_id: "deliverable_select",
-              initial_option: {
-                text: { type: "plain_text" as const, text: "🔀 PR 作成" },
-                value: "pr",
-              },
-              options: [
-                { text: { type: "plain_text" as const, text: "🔀 PR 作成" }, value: "pr" },
-                { text: { type: "plain_text" as const, text: "🔍 調査・報告" }, value: "report" },
-                {
-                  text: { type: "plain_text" as const, text: "📝 コミットのみ" },
-                  value: "commit_only",
-                },
-                {
-                  text: { type: "plain_text" as const, text: "👁 コードレビュー" },
-                  value: "review",
-                },
-              ],
-            },
-            label: { type: "plain_text", text: "完了形式" },
-          },
           ...(onlineAgents.length > 0
             ? [
                 {
@@ -192,6 +167,31 @@ export function registerInteractiveHandlers(app: App): void {
                 },
               ]
             : []),
+          {
+            type: "input",
+            block_id: "deliverable_block",
+            element: {
+              type: "static_select",
+              action_id: "deliverable_select",
+              initial_option: {
+                text: { type: "plain_text" as const, text: "🔀 PR 作成" },
+                value: "pr",
+              },
+              options: [
+                { text: { type: "plain_text" as const, text: "🔀 PR 作成" }, value: "pr" },
+                { text: { type: "plain_text" as const, text: "🔍 調査・報告" }, value: "report" },
+                {
+                  text: { type: "plain_text" as const, text: "📝 コミットのみ" },
+                  value: "commit_only",
+                },
+                {
+                  text: { type: "plain_text" as const, text: "👁 コードレビュー" },
+                  value: "review",
+                },
+              ],
+            },
+            label: { type: "plain_text", text: "完了形式" },
+          },
         ],
       },
     });
