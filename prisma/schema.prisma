@@ -73,7 +73,7 @@ model User {
 
     accountLinks AccountLink[]
     jobs         Job[]
-    mcpTools     McpTool[]
+    mcpServers   McpServer[]
     instructions Instruction[]
     skills       Skill[]
     localAgents  LocalAgent[]
@@ -152,21 +152,17 @@ model JobLog {
     @@index([jobId])
 }
 
-// MCPツール設定
-model McpTool {
-    id          String   @id @default(cuid())
-    name        String
-    description String?
-    endpoint    String
-    method      String   @default("POST")
-    inputType   String?
-    outputType  String?
-    isGlobal    Boolean  @default(false) // true: 全ユーザーに適用
-    ownerId     String? // null: グローバルツール
-    enabled     Boolean  @default(true)
-    config      Json? // 追加設定
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+// MCPサーバー設定
+model McpServer {
+    id        String   @id @default(cuid())
+    name      String // 管理用の表示名（例: "drawio"）
+    serverKey String // mcpServers JSON キー（例: "drawio"）
+    config    Json // MCP設定オブジェクト（command/args/url/env/headers 等）
+    isGlobal  Boolean  @default(false) // true: 全ユーザーに適用
+    ownerId   String? // null: グローバルサーバー
+    enabled   Boolean  @default(true)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
     owner User? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 }

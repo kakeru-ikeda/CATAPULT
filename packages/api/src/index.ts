@@ -4,7 +4,7 @@ import { agentsRouter } from "./routes/agents.js";
 import { authRouter } from "./routes/auth.js";
 import { instructionsRouter } from "./routes/instructions.js";
 import { jobsRouter } from "./routes/jobs.js";
-import { mcpToolsRouter } from "./routes/mcp-tools.js";
+import { mcpServersRouter } from "./routes/mcp-servers.js";
 import { modelsRouter } from "./routes/models.js";
 import { skillsRouter } from "./routes/skills.js";
 import { usersRouter } from "./routes/users.js";
@@ -34,7 +34,7 @@ app.use("/api/auth", authRouter);
 // リソースルート
 app.use("/api/users", usersRouter);
 app.use("/api/jobs", jobsRouter);
-app.use("/api/mcp-tools", mcpToolsRouter);
+app.use("/api/mcp-servers", mcpServersRouter);
 app.use("/api/instructions", instructionsRouter);
 app.use("/api/skills", skillsRouter);
 app.use("/api/agents", agentsRouter);

@@ -41,26 +41,21 @@ interface JobData {
 }
 
 async function getMcpConfig(userId: string): Promise<object | undefined> {
-  const tools = await prisma.mcpTool.findMany({
+  const servers = await prisma.mcpServer.findMany({
     where: {
       enabled: true,
       OR: [{ isGlobal: true }, { ownerId: userId }],
     },
   });
 
-  if (tools.length === 0) return undefined;
+  if (servers.length === 0) return undefined;
 
-  return {
-    tools: tools.map((tool) => ({
-      name: tool.name,
-      description: tool.description,
-      endpoint: tool.endpoint,
-      method: tool.method,
-      inputType: tool.inputType,
-      outputType: tool.outputType,
-      config: tool.config,
-    })),
-  };
+  const mcpServers: Record<string, unknown> = {};
+  for (const server of servers) {
+    mcpServers[server.serverKey] = server.config;
+  }
+
+  return { mcpServers };
 }
 
 async function getActiveInstructions(userId: string): Promise<string | undefined> {
