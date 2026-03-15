@@ -107,3 +107,19 @@ export class CopilotExecutor extends EventEmitter {
     await writeFile(`${configDir}/config.json`, JSON.stringify(config, null, 2));
   }
 }
+
+/**
+ * ジョブのワーキングディレクトリで `git rev-parse` を実行し、
+ * Autopilot が実際にチェックアウトしているブランチ名を取得する。
+ * extractWorkerBranch がイベントから拾えなかった場合のフォールバック。
+ */
+export async function detectBranchFromWorkDir(jobId: string): Promise<string | undefined> {
+  const workDir = `/tmp/copilot-jobs/${jobId}/workspace`;
+  try {
+    const { stdout } = await execAsync("git rev-parse --abbrev-ref HEAD", { cwd: workDir });
+    const branch = stdout.trim();
+    return branch && branch !== "HEAD" ? branch : undefined;
+  } catch {
+    return undefined;
+  }
+}

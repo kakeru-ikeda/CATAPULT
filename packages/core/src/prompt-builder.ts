@@ -58,7 +58,7 @@ export function buildPrompt(options: ExecuteOptions): string {
 
   const deliverableInstruction =
     deliverableType === "pr" && options.repository
-      ? `## 出力形式: PR 作成\n変更をブランチにコミット・プッシュし、\`${options.repository}\` リポジトリにプルリクエストを作成してください。\n`
+      ? `## 出力形式: PR 作成（ブランチへのコミット・プッシュのみ）\n作業ブランチを作成し、変更をコミット・プッシュしてください。\nプルリクエストの作成はシステムが自動的に行うため、\`gh pr create\` は実行しないでください。\n`
       : isExistingBranchContinuation
         ? `## 出力形式: 既存PRへの追加コミット\n現在のブランチ（\`${options.branch}\`）に変更をコミット・プッシュしてください。\nプルリクエストは新たに作成しないでください（既存のPRが自動更新されます）。\n`
         : DELIVERABLE_INSTRUCTIONS[deliverableType];

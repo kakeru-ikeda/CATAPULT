@@ -7,7 +7,8 @@ import { PrismaClient } from "@prisma/client";
 import { Worker, type Job } from "bullmq";
 import { Redis } from "ioredis";
 
-import { CopilotExecutor } from "./executor.js";
+import { CopilotExecutor, detectBranchFromWorkDir } from "./executor.js";
+import { createPullRequest, extractPrTitle } from "./github-pr.js";
 import { cleanupWorkDir } from "./sandbox.js";
 import { refreshTokenIfNeeded } from "./token-refresher.js";
 
@@ -236,8 +237,10 @@ export function createWorker(): Worker<JobData> {
           model: dbJob.model ?? undefined,
         });
 
-        const prUrl = extractPrUrl(events);
-        const workerBranch = extractWorkerBranch(events, jobId);
+        // extractPrUrl はフォールバック用（Autopilot が gh pr create を実行した場合）
+        const extractedPrUrl = extractPrUrl(events);
+        const workerBranch =
+          extractWorkerBranch(events, jobId) ?? (await detectBranchFromWorkDir(jobId));
 
         // ファイルベースでの最終回答の取得を優先する
         let summary: string;
@@ -250,6 +253,32 @@ export function createWorker(): Worker<JobData> {
           summary = fallbackMessage
             ? `⚠️ **サマリーファイルが生成されずにプロセスが終了しました**\n\n【最後のアシスタント発言】\n${fallbackMessage}`
             : "タスクが完了しました（報告内容の生成なし）";
+        }
+
+        // CATAPULT 側で PR を作成（deliverableType=PR かつブランチが確定している場合）
+        let prUrl = extractedPrUrl;
+        if (
+          !prUrl &&
+          dbJob.deliverableType === "PR" &&
+          dbJob.repository &&
+          workerBranch &&
+          workerBranch !== dbJob.branch
+        ) {
+          try {
+            console.info(`[Job ${jobId}] Creating PR via GitHub API (branch: ${workerBranch})...`);
+            prUrl = await createPullRequest({
+              githubToken,
+              repository: dbJob.repository,
+              head: workerBranch,
+              base: dbJob.branch,
+              title: extractPrTitle(summary),
+              body: summary,
+            });
+            console.info(`[Job ${jobId}] PR created: ${prUrl}`);
+          } catch (prErr) {
+            console.error(`[Job ${jobId}] PR creation failed:`, prErr);
+            // PR作成失敗はジョブ全体の失敗にはしない
+          }
         }
 
         // Relay がジョブ完了を検知できるよう明示的に done イベントを送信
