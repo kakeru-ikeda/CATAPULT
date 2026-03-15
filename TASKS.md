@@ -247,3 +247,21 @@
 - [x] API（`routes/agents.ts`）の claim 時のデータ拡充、complete 時のスキーマ変更
 - [x] `packages/worker` リファクタ: `@catapult/core` 利用への切り替え
 - [x] `packages/local-agent` リファクタ: プロンプト対応、`CATAPULT_SUMMARY.md` 読み取り＆クリーンアップ処理の追加
+
+## モデル選択機能
+
+[設計書: docs/model-selection.md](./docs/model-selection.md)
+
+- [x] `prisma/schema.prisma`: `CopilotModel` テーブル追加、`Job.model` フィールド追加
+- [x] `prisma/migrations/20260315130000_add_copilot_model/`: マイグレーション SQL
+- [x] `packages/core/src/types.ts`: `ExecuteOptions` に `model?: string` 追加
+- [x] `packages/worker/src/utils.ts`: `parseAvailableModels()` 追加
+- [x] `packages/worker/src/index.ts`: 起動時に `syncCopilotModels()` 呼び出し
+- [x] `packages/worker/src/executor.ts`: `--model` フラグを動的組み立て
+- [x] `packages/local-agent/src/executor.ts`: `--model` フラグを動的組み立て
+- [x] `packages/api/src/routes/models.ts`: `GET /api/models` エンドポイント新規作成
+- [x] `packages/api/src/index.ts`: `modelsRouter` 追加
+- [x] `packages/bot/src/services/models.ts`: `fetchAvailableModels()` ヘルパー新規作成
+- [x] `packages/bot/src/handlers/task.ts`: `TaskContext` / `submitJob` に `model` 追加
+- [x] `packages/bot/src/handlers/interactive.ts`: Slack モーダルにモデルドロップダウン追加
+- [x] `packages/bot/src/handlers/discord-task.ts`: Discord UI にモデルセレクトメニュー追加
