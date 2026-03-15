@@ -4,6 +4,8 @@ Slack / Discord をインターフェースとして GitHub Copilot CLI を呼�
 
 Hoge
 
+Huga
+
 <div align="center">
   <img src="assets/banner-mini.svg" alt="CATAPULT Banner" />
 </div>
