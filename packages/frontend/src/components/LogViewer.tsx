@@ -41,7 +41,9 @@ export const LogViewer = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isLive, setIsLive] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
+  const API_URL =
+    (import.meta.env.VITE_API_URL as string | undefined) ??
+    import.meta.env.BASE_URL.replace(/\/$/, "");
 
   useEffect(() => {
     if (!record?.id) return;
