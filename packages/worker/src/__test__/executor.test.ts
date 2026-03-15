@@ -1,6 +1,6 @@
+import type { ExecuteOptions } from "@catapult/core";
 import { describe, it, expect } from "vitest";
 
-import type { ExecuteOptions } from "../executor.js";
 import { CopilotExecutor } from "../executor.js";
 
 // buildPrompt は private だが型安全にアクセスするためのヘルパー

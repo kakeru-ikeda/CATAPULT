@@ -153,7 +153,8 @@ router.post("/jobs/claim", async (req: Request, res: Response) => {
       },
       orderBy: { createdAt: "asc" },
       include: {
-        user: { select: { githubToken: true } },
+        user: { select: { id: true, githubToken: true } },
+        parent: { select: { prUrl: true, resultSummary: true } },
       },
     });
 
@@ -172,6 +173,19 @@ router.post("/jobs/claim", async (req: Request, res: Response) => {
     return;
   }
 
+  // user のグローバルインストラクションを取得
+  const activeInstructions = await prisma.instruction.findMany({
+    where: {
+      userId: job.user.id,
+      isActive: true,
+    },
+    orderBy: { createdAt: "asc" },
+  });
+  const instructions =
+    activeInstructions.length > 0
+      ? activeInstructions.map((i) => `## ${i.name}\n${i.content}`).join("\n\n")
+      : undefined;
+
   // トークンを復号（AES-256-GCM）
   let githubToken = "";
   try {
@@ -182,11 +196,21 @@ router.post("/jobs/claim", async (req: Request, res: Response) => {
     return;
   }
 
+  let previousContext: string | undefined;
+  if (job.parent) {
+    previousContext = job.parent.prUrl
+      ? `${job.parent.resultSummary}\n\nPR: ${job.parent.prUrl}`
+      : (job.parent.resultSummary ?? undefined);
+  }
+
   res.json({
     jobId: job.id,
     repository: job.repository,
     branch: job.branch,
     prompt: job.prompt,
+    deliverableType: job.deliverableType.toLowerCase(),
+    instructions,
+    previousContext,
     githubToken,
   });
 });
@@ -246,9 +270,11 @@ router.post("/jobs/:jobId/complete", async (req: Request, res: Response) => {
   if (!agent) return;
 
   const { jobId } = req.params as { jobId: string };
-  const { status, error } = req.body as {
+  const { status, error, summary, prUrl } = req.body as {
     status?: "COMPLETED" | "FAILED";
     error?: string;
+    summary?: string;
+    prUrl?: string;
   };
 
   if (status !== "COMPLETED" && status !== "FAILED") {
@@ -266,22 +292,29 @@ router.post("/jobs/:jobId/complete", async (req: Request, res: Response) => {
     return;
   }
 
-  // JobLog から prUrl と summary を抽出（workerと同じロジック）
-  const logs = await prisma.jobLog.findMany({
-    where: { jobId },
-    select: { eventType: true, content: true },
-    orderBy: { id: "asc" },
-  });
+  // extractCompletionFromLogs ではなく、ローカルエージェントから送られた summary を優先使用
+  let finalSummary = summary;
+  let finalPrUrl = prUrl;
 
-  const { prUrl, summary } = extractCompletionFromLogs(logs);
+  if (!finalSummary) {
+    // 互換性のため（未対応エージェントや summary が取れなかった場合）、JobLog からも試みる
+    const logs = await prisma.jobLog.findMany({
+      where: { jobId },
+      select: { eventType: true, content: true },
+      orderBy: { id: "asc" },
+    });
+    const extracted = extractCompletionFromLogs(logs);
+    finalSummary = extracted.summary;
+    finalPrUrl = finalPrUrl ?? extracted.prUrl;
+  }
 
   await prisma.job.update({
     where: { id: jobId },
     data: {
       status,
       completedAt: new Date(),
-      prUrl: prUrl ?? null,
-      resultSummary: summary,
+      prUrl: finalPrUrl ?? null,
+      resultSummary: finalSummary,
       ...(error ? { output: error } : {}),
     },
   });
@@ -290,7 +323,10 @@ router.post("/jobs/:jobId/complete", async (req: Request, res: Response) => {
   if (status === "FAILED" && error) {
     await redis.publish(`job:${jobId}`, JSON.stringify({ type: "error", message: error }));
   } else {
-    await redis.publish(`job:${jobId}`, JSON.stringify({ type: "done", summary, prUrl }));
+    await redis.publish(
+      `job:${jobId}`,
+      JSON.stringify({ type: "done", summary: finalSummary, prUrl: finalPrUrl }),
+    );
   }
 
   res.json({ ok: true });

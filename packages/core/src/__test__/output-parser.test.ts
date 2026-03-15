@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 
-import type { CopilotEvent } from "../executor.js";
 import { extractFinalAssistantMessage, extractPrUrl, parseCopilotEvent } from "../output-parser.js";
+import type { CopilotEvent } from "../types.js";
 
 describe("parseCopilotEvent", () => {
   it("有効な JSON を正しくパースする", () => {

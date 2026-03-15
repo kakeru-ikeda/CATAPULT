@@ -4,12 +4,17 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY packages/api/package*.json ./packages/api/
+COPY packages/core/package*.json ./packages/core/
 COPY tsconfig.base.json ./
 COPY prisma ./prisma
 
-RUN npm pkg delete scripts.prepare && npm ci --workspace=packages/api --include-workspace-root
+RUN npm pkg delete scripts.prepare && npm ci --workspace=packages/api --workspace=packages/core --include-workspace-root
 
 RUN npx prisma generate
+
+COPY packages/core/src ./packages/core/src
+COPY packages/core/tsconfig.json ./packages/core/
+RUN npm run build --workspace=packages/core
 
 COPY packages/api/src ./packages/api/src
 COPY packages/api/tsconfig.json ./packages/api/
@@ -26,12 +31,14 @@ RUN apk add --no-cache openssl
 
 COPY package*.json ./
 COPY packages/api/package*.json ./packages/api/
+COPY packages/core/package*.json ./packages/core/
 COPY prisma ./prisma
 
 RUN npm pkg delete scripts.prepare && npm ci --workspace=packages/api --omit=dev
 
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
+COPY --from=builder /app/packages/core/dist ./packages/core/dist
 COPY --from=builder /app/packages/api/dist ./packages/api/dist
 
 EXPOSE 3000

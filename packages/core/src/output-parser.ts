@@ -1,4 +1,4 @@
-import type { CopilotEvent } from "./executor.js";
+import type { CopilotEvent } from "./types.js";
 
 export function parseCopilotEvent(line: string): CopilotEvent | null {
   try {
@@ -25,7 +25,7 @@ export function extractPrUrl(events: CopilotEvent[]): string | undefined {
       const match = event.stdout.match(PR_URL_PATTERN);
       if (match?.[0]) return match[0];
     }
-    // New Copilot CLI v1.x format: scan tool result and assistant message content
+    // New Copilot CLI v1.x format
     if (event.data?.result?.content) {
       const match = event.data.result.content.match(PR_URL_PATTERN);
       if (match?.[0]) return match[0];

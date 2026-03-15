@@ -231,3 +231,13 @@
 ## 本番運用ドキュメント
 
 - [x] docs/operations.md: サーバー導入・Slack/Discord Bot パーミッション設定・ローカルエージェント設定・日常運用・トラブルシューティング・バックアップ手順を網羅した運用マニュアル作成
+
+## 次期改善: WorkerとLocalAgentのコアロジック共有化
+
+[設計書: docs/refactoring-core-shared-logic.md](./docs/refactoring-core-shared-logic.md)
+
+- [x] `packages/core` 新規パッケージ作成・初期化
+- [x] プロンプト構築（`prompt-builder.ts`）・結果解析（`output-parser.ts`）・共通型（`types.ts`）の移行
+- [x] API（`routes/agents.ts`）の claim  時のデータ拡充、complete 時のスキーマ変更
+- [x] `packages/worker` リファクタ: `@catapult/core` 利用への切り替え
+- [x] `packages/local-agent` リファクタ: プロンプト対応、`CATAPULT_SUMMARY.md` 読み取り＆クリーンアップ処理の追加

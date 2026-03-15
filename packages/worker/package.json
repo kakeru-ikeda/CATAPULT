@@ -13,6 +13,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@catapult/core": "^1.0.0",
     "@prisma/client": "^5.22.0",
     "bullmq": "^5.70.4",
     "ioredis": "^5.10.0",

@@ -2,15 +2,13 @@ import { spawn, type ChildProcess } from "child_process";
 import { EventEmitter } from "events";
 import { createInterface } from "readline";
 
+import { buildPrompt, type ExecuteOptions } from "@catapult/core";
+
 import { EventReporter } from "./event-reporter.js";
 
-export interface LocalExecuteOptions {
-  jobId: string;
-  workDir: string; // ローカルリポジトリの絶対パス
-  prompt: string;
-  repository: string;
-  branch: string;
-  githubToken: string;
+// local-agent 特有のオプション（workDirなど）を ExecuteOptions に追加・拡張する
+export interface LocalExecuteOptions extends ExecuteOptions {
+  workDir: string;
 }
 
 export class LocalCopilotExecutor extends EventEmitter {
@@ -19,9 +17,12 @@ export class LocalCopilotExecutor extends EventEmitter {
   private static readonly DENIED_TOOLS = ["delete_repo", "transfer_repo", "archive_repo"] as const;
 
   async execute(options: LocalExecuteOptions, reporter: EventReporter): Promise<void> {
-    const { jobId, workDir, prompt, repository, branch, githubToken } = options;
+    const { jobId, workDir, repository, branch, githubToken } = options;
 
     const denyArgs = LocalCopilotExecutor.DENIED_TOOLS.flatMap((t) => ["--deny-tool", t]);
+
+    // @catapult/core の共有プロンプト生成を使用
+    const finalPrompt = buildPrompt(options);
 
     const args = [
       "--autopilot",
@@ -29,7 +30,7 @@ export class LocalCopilotExecutor extends EventEmitter {
       "--output-format",
       "json",
       "-p",
-      prompt,
+      finalPrompt,
       ...denyArgs,
     ];
 

@@ -14,11 +14,16 @@ interface ClaimJobResponse {
   branch: string;
   prompt: string;
   githubToken: string;
+  deliverableType?: "pr" | "report" | "commit_only" | "review";
+  instructions?: string | null;
+  previousContext?: string;
 }
 
 interface CompleteJobRequest {
   status: "COMPLETED" | "FAILED";
   error?: string;
+  summary?: string;
+  prUrl?: string;
 }
 
 interface FallbackRequest {
@@ -97,22 +102,41 @@ async function runJob(config: AgentConfig, jobId: string): Promise<void> {
 
   const reporter = new EventReporter(job.jobId, config);
   const executor = new LocalCopilotExecutor();
+  let summary: string | undefined;
 
   try {
     await executor.execute(
       {
         jobId: job.jobId,
         workDir,
+        userId: "local-agent", // dummy
         prompt: job.prompt,
         repository: job.repository,
         branch: job.branch,
         githubToken: job.githubToken,
+        deliverableType: job.deliverableType as "pr" | "report" | "commit_only" | "review",
+        instructions: job.instructions ?? undefined,
+        previousContext: job.previousContext,
       },
       reporter,
     );
 
     await reporter.flush();
-    await completeJob(config, job.jobId, { status: "COMPLETED" });
+
+    // CATAPULT_SUMMARY.md の読み取り
+    try {
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const summaryPath = path.join(workDir, "CATAPULT_SUMMARY.md");
+      summary = await fs.readFile(summaryPath, "utf-8");
+
+      // Cleanup
+      await fs.rm(summaryPath, { force: true });
+    } catch {
+      console.warn(`[Job ${job.jobId}] CAUTION: CATAPULT_SUMMARY.md not found in ${workDir}.`);
+    }
+
+    await completeJob(config, job.jobId, { status: "COMPLETED", summary });
     console.info(`[agent] Job ${job.jobId} completed`);
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);

@@ -1,12 +1,13 @@
 import { readFile } from "fs/promises";
 import path from "path";
 
+import type { CopilotEvent } from "@catapult/core";
+import { extractFinalAssistantMessage, extractPrUrl } from "@catapult/core";
 import { PrismaClient } from "@prisma/client";
 import { Worker, type Job } from "bullmq";
 import { Redis } from "ioredis";
 
-import { CopilotExecutor, type CopilotEvent } from "./executor.js";
-import { extractFinalAssistantMessage, extractPrUrl } from "./output-parser.js";
+import { CopilotExecutor } from "./executor.js";
 import { cleanupWorkDir } from "./sandbox.js";
 import { refreshTokenIfNeeded } from "./token-refresher.js";
 
@@ -222,7 +223,7 @@ export function createWorker(): Worker<JobData> {
           const workDir = `/tmp/copilot-jobs/${jobId}/workspace`;
           const summaryFilePath = path.join(workDir, "CATAPULT_SUMMARY.md");
           summary = await readFile(summaryFilePath, "utf-8");
-        } catch (err) {
+        } catch {
           const fallbackMessage = extractFinalAssistantMessage(events);
           summary = fallbackMessage
             ? `⚠️ **サマリーファイルが生成されずにプロセスが終了しました**\n\n【最後のアシスタント発言】\n${fallbackMessage}`
