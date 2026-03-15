@@ -29,8 +29,6 @@ Copilot CLI は `--output json` オプション指定時に、stdout に NDJSON 
 | `error`      | エラー発生                | エラー通知       | ❌ \<message\>         |
 | `done`       | 完了 + サマリー           | 完了通知         | ✅ \<summary\>         |
 
-最終的に Slack/Discord へ送る完了報告の品質を安定させるため、Copilot CLI の最後の `assistant.message` には `## 送信用メッセージ` セクションを含めます。Worker / local-agent はこのセクションを優先して `done.summary` に採用し、セクションが無い場合のみ最後の `assistant.message` 全体をフォールバックとして使用します。
-
 ## パイプライン設計
 
 ```
