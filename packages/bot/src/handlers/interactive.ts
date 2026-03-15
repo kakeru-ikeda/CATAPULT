@@ -171,6 +171,30 @@ export function registerInteractiveHandlers(app: App): void {
             : []),
           {
             type: "input",
+            block_id: "model_block",
+            optional: true,
+            element: {
+              type: "static_select",
+              action_id: "model_select",
+              initial_option: {
+                text: { type: "plain_text" as const, text: "🤖 Auto" },
+                value: "auto",
+              },
+              options: [
+                {
+                  text: { type: "plain_text" as const, text: "🤖 Auto" },
+                  value: "auto",
+                },
+                ...availableModels.map((m) => ({
+                  text: { type: "plain_text" as const, text: m.displayName ?? m.name },
+                  value: m.name,
+                })),
+              ],
+            },
+            label: { type: "plain_text", text: "モデル" },
+          },
+          {
+            type: "input",
             block_id: "deliverable_block",
             element: {
               type: "static_select",
@@ -193,30 +217,6 @@ export function registerInteractiveHandlers(app: App): void {
               ],
             },
             label: { type: "plain_text", text: "完了形式" },
-          },
-          {
-            type: "input",
-            block_id: "model_block",
-            optional: true,
-            element: {
-              type: "static_select",
-              action_id: "model_select",
-              initial_option: {
-                text: { type: "plain_text" as const, text: "🤖 Auto" },
-                value: "auto",
-              },
-              options: [
-                {
-                  text: { type: "plain_text" as const, text: "🤖 Auto" },
-                  value: "auto",
-                },
-                ...availableModels.map((m) => ({
-                  text: { type: "plain_text" as const, text: m.displayName ?? m.name },
-                  value: m.name,
-                })),
-              ],
-            },
-            label: { type: "plain_text", text: "モデル" },
           },
         ],
       },
