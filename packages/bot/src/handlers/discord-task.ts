@@ -238,7 +238,8 @@ export async function showDiscordDeliverableSelect(
     deliverableSelect,
   );
 
-  const components: ActionRowBuilder<StringSelectMenuBuilder>[] = [deliverableRow];
+  type AnyRow = ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>;
+  const components: AnyRow[] = [deliverableRow as AnyRow];
 
   if (onlineAgents.length > 0) {
     const executionModeSelect = new StringSelectMenuBuilder()
@@ -259,7 +260,7 @@ export async function showDiscordDeliverableSelect(
     const executionModeRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
       executionModeSelect,
     );
-    components.push(executionModeRow);
+    components.push(executionModeRow as AnyRow);
   }
 
   if (availableModels.length > 0) {
@@ -280,9 +281,18 @@ export async function showDiscordDeliverableSelect(
     components.splice(
       components.length - 1,
       0,
-      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(modelSelect),
+      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(modelSelect) as AnyRow,
     );
   }
+
+  // 実行開始ボタン（選択後にクリックで投入）
+  const startButton = new ButtonBuilder()
+    .setCustomId(`start_job:${message.id}`)
+    .setLabel("🚀 実行開始")
+    .setStyle(ButtonStyle.Primary);
+  components.push(
+    new ActionRowBuilder<ButtonBuilder>().addComponents(startButton) as AnyRow,
+  );
 
   await replyMsg.edit({
     content:
@@ -306,6 +316,20 @@ export async function showDiscordDeliverableSelect(
 
   collector.on("collect", (interaction) => {
     void (async () => {
+      if (interaction.isButton()) {
+        if (interaction.customId.startsWith("start_job:")) {
+          if (selectedDeliverable === null) {
+            await interaction.reply({
+              content: "⚠️ 完了形式を選択してください。",
+              ephemeral: true,
+            });
+            return;
+          }
+          await interaction.deferUpdate();
+          collector.stop("selected");
+        }
+        return;
+      }
       if (!interaction.isStringSelectMenu()) return;
       await interaction.deferUpdate();
 
@@ -316,11 +340,6 @@ export async function showDiscordDeliverableSelect(
       } else if (interaction.customId.startsWith("model_select:")) {
         const val = interaction.values[0];
         selectedModel = val === "auto" ? undefined : val;
-      }
-
-      // 両方選択済みになったら（またはエージェントなし＝deliverableのみ）ジョブ投入
-      if (selectedDeliverable !== null) {
-        collector.stop("selected");
       }
     })();
   });
