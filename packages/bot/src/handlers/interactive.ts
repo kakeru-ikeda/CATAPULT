@@ -253,50 +253,54 @@ export function registerInteractiveHandlers(app: App): void {
   });
 
   // ジョブ実行（完了形式ボタン）
-  app.action<BlockAction>("submit_job", async ({ action, body, ack, respond }) => {
-    await ack();
+  // action_id は "submit_job_pr" / "submit_job_report" 等、deliverableType 付きのためパターンマッチで登録
+  const DELIVERABLE_TYPES: DeliverableType[] = ["pr", "report", "commit_only", "review"];
+  for (const dt of DELIVERABLE_TYPES) {
+    app.action<BlockAction>(`submit_job_${dt}`, async ({ action, body, ack, respond }) => {
+      await ack();
 
-    const operatorId = body.user.id;
-    const value = "value" in action ? action.value : undefined;
-    if (!value) return;
+      const operatorId = body.user.id;
+      const value = "value" in action ? action.value : undefined;
+      if (!value) return;
 
-    // value = base64(ctx):deliverableType:slackUserId
-    const parts = value.split(":");
-    const ownerId = parts[parts.length - 1]!;
-    const deliverableType = parts[parts.length - 2] as DeliverableType;
-    const ctxBase64 = parts.slice(0, parts.length - 2).join(":");
+      // value = base64(ctx):deliverableType:slackUserId
+      const parts = value.split(":");
+      const ownerId = parts[parts.length - 1]!;
+      const deliverableType = parts[parts.length - 2] as DeliverableType;
+      const ctxBase64 = parts.slice(0, parts.length - 2).join(":");
 
-    if (ownerId !== operatorId) {
+      if (ownerId !== operatorId) {
+        await respond({
+          text: "このアクションを実行する権限がありません。",
+          response_type: "ephemeral",
+          replace_original: false,
+        });
+        return;
+      }
+
+      let ctx: Omit<TaskContext, "deliverableType">;
+      try {
+        ctx = JSON.parse(Buffer.from(ctxBase64, "base64").toString("utf8")) as Omit<
+          TaskContext,
+          "deliverableType"
+        >;
+      } catch {
+        await respond({
+          text: "無効なコンテキストです。",
+          response_type: "ephemeral",
+          replace_original: false,
+        });
+        return;
+      }
+
+      await submitJob({ ...ctx, deliverableType });
+
       await respond({
-        text: "このアクションを実行する権限がありません。",
-        response_type: "ephemeral",
-        replace_original: false,
+        text: `✅ ジョブを投入しました: \`${ctx.repo}\` - \`${ctx.branch}\``,
+        replace_original: true,
       });
-      return;
-    }
-
-    let ctx: Omit<TaskContext, "deliverableType">;
-    try {
-      ctx = JSON.parse(Buffer.from(ctxBase64, "base64").toString("utf8")) as Omit<
-        TaskContext,
-        "deliverableType"
-      >;
-    } catch {
-      await respond({
-        text: "無効なコンテキストです。",
-        response_type: "ephemeral",
-        replace_original: false,
-      });
-      return;
-    }
-
-    await submitJob({ ...ctx, deliverableType });
-
-    await respond({
-      text: `✅ ジョブを投入しました: \`${ctx.repo}\` - \`${ctx.branch}\``,
-      replace_original: true,
     });
-  });
+  }
 
   // ジョブ実行確認ボタン（下位互換）（下位互換）
   app.action<BlockAction>("confirm_job", async ({ action, body, ack, respond }) => {

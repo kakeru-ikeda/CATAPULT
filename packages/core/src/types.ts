@@ -1,5 +1,15 @@
 export type DeliverableType = "pr" | "report" | "commit_only" | "review";
 
+/** スレッド内の 1 ターン分の会話記録 */
+export interface ConversationTurn {
+  /** ユーザーが送ったプロンプト */
+  prompt: string;
+  /** エージェントが返した結果サマリー */
+  summary: string;
+  /** 作成された PR の URL（あれば） */
+  prUrl?: string;
+}
+
 export interface ExecuteOptions {
   jobId: string;
   userId: string;
@@ -9,7 +19,8 @@ export interface ExecuteOptions {
   githubToken: string;
   mcpConfig?: object;
   instructions?: string;
-  previousContext?: string; // 前回ジョブのサマリー（軽量セッション）
+  /** スレッド内の過去ターン履歴（時系列昇順）。空配列または undefined の場合は省略 */
+  conversationHistory?: ConversationTurn[];
   deliverableType?: DeliverableType;
 }
 

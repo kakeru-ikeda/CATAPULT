@@ -178,17 +178,33 @@ export function createWorker(): Worker<JobData> {
           getActiveInstructions(dbJob.userId),
         ]);
 
-        // 前回ジョブのサマリーを取得（軽量セッション）
-        let previousContext: string | undefined;
-        if (dbJob.parentJobId) {
-          const parentJob = await prisma.job.findUnique({
-            where: { id: dbJob.parentJobId },
-            select: { resultSummary: true, prUrl: true },
+        // スレッド内の会話履歴を時系列で取得（最大 10 ターン）
+        const conversationHistory: Array<{ prompt: string; summary: string; prUrl?: string }> = [];
+        if (dbJob.threadId) {
+          const threadJobs = await prisma.job.findMany({
+            where: {
+              userId: dbJob.userId,
+              threadId: dbJob.threadId,
+              status: "COMPLETED",
+              id: { not: dbJob.id },
+            },
+            orderBy: { completedAt: "asc" },
+            take: 10,
+            select: { prompt: true, resultSummary: true, prUrl: true },
           });
-          if (parentJob?.resultSummary) {
-            previousContext = parentJob.prUrl
-              ? `${parentJob.resultSummary}\n\nPR: ${parentJob.prUrl}`
-              : parentJob.resultSummary;
+          for (const j of threadJobs) {
+            if (j.resultSummary) {
+              conversationHistory.push({
+                prompt: j.prompt,
+                summary: j.resultSummary,
+                prUrl: j.prUrl ?? undefined,
+              });
+            }
+          }
+          if (conversationHistory.length > 0) {
+            console.info(
+              `[Job ${jobId}] Loaded ${conversationHistory.length} conversation turn(s) from thread`,
+            );
           }
         }
 
@@ -204,7 +220,7 @@ export function createWorker(): Worker<JobData> {
           githubToken,
           mcpConfig,
           instructions,
-          previousContext,
+          conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
           deliverableType:
             dbJob.deliverableType === "PR"
               ? "pr"

@@ -16,7 +16,7 @@ interface ClaimJobResponse {
   githubToken: string;
   deliverableType?: "pr" | "report" | "commit_only" | "review";
   instructions?: string | null;
-  previousContext?: string;
+  conversationHistory?: Array<{ prompt: string; summary: string; prUrl?: string }>;
 }
 
 interface CompleteJobRequest {
@@ -116,7 +116,7 @@ async function runJob(config: AgentConfig, jobId: string): Promise<void> {
         githubToken: job.githubToken,
         deliverableType: job.deliverableType as "pr" | "report" | "commit_only" | "review",
         instructions: job.instructions ?? undefined,
-        previousContext: job.previousContext,
+        conversationHistory: job.conversationHistory,
       },
       reporter,
     );

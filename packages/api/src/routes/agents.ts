@@ -170,7 +170,6 @@ router.post("/jobs/claim", async (req: Request, res: Response) => {
       orderBy: { createdAt: "asc" },
       include: {
         user: { select: { id: true, githubToken: true } },
-        parent: { select: { prUrl: true, resultSummary: true } },
       },
     });
 
@@ -212,11 +211,29 @@ router.post("/jobs/claim", async (req: Request, res: Response) => {
     return;
   }
 
-  let previousContext: string | undefined;
-  if (job.parent) {
-    previousContext = job.parent.prUrl
-      ? `${job.parent.resultSummary}\n\nPR: ${job.parent.prUrl}`
-      : (job.parent.resultSummary ?? undefined);
+  // スレッド内の会話履歴を時系列で取得（最大 10 ターン）
+  const conversationHistory: Array<{ prompt: string; summary: string; prUrl?: string }> = [];
+  if (job.threadId) {
+    const threadJobs = await prisma.job.findMany({
+      where: {
+        userId: job.user.id,
+        threadId: job.threadId,
+        status: "COMPLETED",
+        id: { not: job.id },
+      },
+      orderBy: { completedAt: "asc" },
+      take: 10,
+      select: { prompt: true, resultSummary: true, prUrl: true },
+    });
+    for (const j of threadJobs) {
+      if (j.resultSummary) {
+        conversationHistory.push({
+          prompt: j.prompt,
+          summary: j.resultSummary,
+          prUrl: j.prUrl ?? undefined,
+        });
+      }
+    }
   }
 
   res.json({
@@ -226,7 +243,7 @@ router.post("/jobs/claim", async (req: Request, res: Response) => {
     prompt: job.prompt,
     deliverableType: job.deliverableType.toLowerCase(),
     instructions,
-    previousContext,
+    conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
     githubToken,
   });
 });

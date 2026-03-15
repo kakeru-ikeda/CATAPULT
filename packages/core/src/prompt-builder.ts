@@ -1,4 +1,14 @@
-import { DeliverableType, ExecuteOptions } from "./types.js";
+import { ConversationTurn, DeliverableType, ExecuteOptions } from "./types.js";
+
+/** ConversationTurn[] をプロンプト埋め込み用のテキストに変換する */
+function formatConversationHistory(history: ConversationTurn[]): string {
+  return history
+    .map((turn, i) => {
+      const summary = turn.prUrl ? `${turn.summary}\n\nPR: ${turn.prUrl}` : turn.summary;
+      return `### ターン ${i + 1}\n**ユーザー:** ${turn.prompt}\n\n**結果:** ${summary}`;
+    })
+    .join("\n\n---\n\n");
+}
 
 const DELIVERABLE_INSTRUCTIONS: Record<DeliverableType, string> = {
   pr: "",
@@ -30,9 +40,10 @@ export function buildPrompt(options: ExecuteOptions): string {
 `
     : "";
 
-  const previousContextSection = options.previousContext
-    ? `## 前回の作業サマリー\n${options.previousContext}`
-    : "";
+  const previousContextSection =
+    options.conversationHistory && options.conversationHistory.length > 0
+      ? `## このスレッドのこれまでの会話履歴\n以下は同じスレッドで行われた過去のやり取りです。前後の文脈を踏まえて今回のタスクに答えてください。\n\n${formatConversationHistory(options.conversationHistory)}`
+      : "";
 
   const deliverableType = options.deliverableType ?? "pr";
 

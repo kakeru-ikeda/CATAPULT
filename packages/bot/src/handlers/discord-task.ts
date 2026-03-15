@@ -77,7 +77,8 @@ async function submitDiscordJob(
       status: "PENDING",
       platform: "DISCORD",
       channelId: message.channelId,
-      threadId: message.id,
+      // スレッド識別子として message.channelId を使用（進捗スレッドIDではなく会話チャンネルIDで統一）
+      threadId: message.channelId,
       parentJobId: parentJob?.id ?? null,
       deliverableType:
         deliverableType === "pr"
@@ -121,19 +122,10 @@ async function submitDiscordJob(
         autoArchiveDuration: 60,
       });
       outputChannel = thread as unknown as SendableChannel;
-      // スレッド ID をジョブに保存
-      await prisma.job.update({
-        where: { id: job.id },
-        data: { threadId: thread.id },
-      });
+      // 進捗スレッドは出力用のみ。threadId（セッション識別子）は message.channelId のまま維持する
     }
   } catch {
-    // スレッド作成不可（入れ子スレッド等）の場合はチャンネルにフォールバック
-    // threadId を既存スレッドID（message.channelId）で更新してセッション継続を維持する
-    await prisma.job.update({
-      where: { id: job.id },
-      data: { threadId: message.channelId },
-    });
+    // スレッド作成不可（入れ子スレッドなど）の場合はチャンネルにフォールバック（threadId は変更不要）
   }
 
   const relay = new DiscordJobStreamRelay(job.id, outputChannel, message.author.id);

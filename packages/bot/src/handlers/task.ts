@@ -155,7 +155,8 @@ export async function showConfirmation(
   ).map(({ value, label }) => ({
     type: "button" as const,
     text: { type: "plain_text" as const, text: label },
-    action_id: "submit_job",
+    // Slack は同一メッセージ内で action_id がユニークである必要があるため deliverableType を付与
+    action_id: `submit_job_${value}`,
     // value = base64(ctx):deliverableType:slackUserId
     value: `${ctxBase64}:${value}:${slackUserId}`,
   }));
