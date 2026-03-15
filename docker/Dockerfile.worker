@@ -30,7 +30,7 @@ ENV NODE_ENV=production
 # git, openssl と GitHub Copilot CLI のインストール
 # node:24-slim は Debian ベース（glibc）なので @github/copilot-linux-x64 バイナリが動作する
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git curl openssl ca-certificates \
+    git curl openssl ca-certificates python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # GitHub Copilot CLI インストール（プラットフォームバイナリを含む）
