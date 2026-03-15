@@ -120,6 +120,9 @@ export function buildCanvasMarkdown(
 // ワークスペース URL のキャッシュ（Bot 再起動までの間有効）
 let cachedWorkspaceUrl: string | null = null;
 
+// 無料プランなど Canvas 非対応ワークスペースの場合に true にするフラグ
+let canvasUnavailable = false;
+
 /**
  * auth.test からワークスペース URL を取得し、Canvas の URL を組み立てる。
  * 追加スコープ不要（auth.test は常に利用可能）。
@@ -140,13 +143,17 @@ export async function getCanvasUrl(canvasId: string, client: WebClient): Promise
 /**
  * スレッド対応の Canvas を取得または作成する。
  * 既存 Canvas がある場合はその ID を返す。
+ * 無料プランなど Canvas 非対応ワークスペースの場合は null を返す（メッセージ方式にフォールバック）。
  */
 export async function getOrCreateThreadCanvas(
   platform: Platform,
   channelId: string,
   threadId: string,
   client: WebClient,
-): Promise<{ canvasId: string; isNew: boolean; url: string }> {
+): Promise<{ canvasId: string; isNew: boolean; url: string } | null> {
+  // 非対応ワークスペースはスキップ
+  if (canvasUnavailable) return null;
+
   const existing = await prisma.threadCanvas.findUnique({
     where: {
       platform_channelId_threadId: { platform, channelId, threadId },
@@ -159,22 +166,39 @@ export async function getOrCreateThreadCanvas(
   }
 
   // Slack Canvas を新規作成
-  const result = await client.canvases.create({
-    title: "Copilot Catapult",
-    document_content: {
-      type: "markdown",
-      markdown: "# 🤖 Copilot Catapult\n\n作業ログを開始します...",
-    },
-  });
+  try {
+    const result = await client.canvases.create({
+      title: "Copilot Catapult",
+      document_content: {
+        type: "markdown",
+        markdown: "# 🤖 Copilot Catapult\n\n作業ログを開始します...",
+      },
+    });
 
-  const canvasId = result.canvas_id!;
+    const canvasId = result.canvas_id!;
 
-  await prisma.threadCanvas.create({
-    data: { platform, channelId, threadId, canvasId },
-  });
+    await prisma.threadCanvas.create({
+      data: { platform, channelId, threadId, canvasId },
+    });
 
-  const url = await getCanvasUrl(canvasId, client);
-  return { canvasId, isNew: true, url };
+    const url = await getCanvasUrl(canvasId, client);
+    return { canvasId, isNew: true, url };
+  } catch (err) {
+    // 無料プランや権限不足の場合はフォールバックを有効化して null を返す
+    const isUnsupported =
+      err instanceof Error &&
+      (err.message.includes("free_teams_cannot_create_non_tabbed_canvases") ||
+        err.message.includes("missing_scope") ||
+        err.message.includes("not_allowed"));
+    if (isUnsupported) {
+      canvasUnavailable = true;
+      console.info(
+        "[CanvasManager] Canvas unavailable for this workspace, falling back to message mode.",
+      );
+      return null;
+    }
+    throw err;
+  }
 }
 
 /**

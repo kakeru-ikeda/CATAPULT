@@ -137,14 +137,18 @@ CATAPULT の Slack Bot は **Socket Mode**（WebSocket 接続）で動作しま�
 
 左メニューの **OAuth & Permissions** → **Scopes** → **Bot Token Scopes** に以下を追加:
 
-| スコープ            | 用途                                 |
-| ------------------- | ------------------------------------ |
-| `app_mentions:read` | メンションイベントの受信             |
-| `chat:write`        | メッセージの投稿                     |
-| `chat:write.public` | チャンネルに未参加でもメッセージ投稿 |
-| `im:write`          | DM の送信                            |
-| `users:read`        | ユーザー情報の取得                   |
-| `channels:read`     | チャンネル情報の取得                 |
+| スコープ            | 用途                                    |
+| ------------------- | --------------------------------------- |
+| `app_mentions:read` | メンションイベントの受信                |
+| `chat:write`        | メッセージの投稿                        |
+| `chat:write.public` | チャンネルに未参加でもメッセージ投稿    |
+| `im:write`          | DM の送信                               |
+| `users:read`        | ユーザー情報の取得                      |
+| `channels:read`     | チャンネル情報の取得                    |
+| `canvases:write`    | Canvas の作成・編集（進捗・結果表示用） |
+| `canvases:read`     | Canvas セクションの参照                 |
+
+> **Canvas スコープについて**: CATAPULT は Copilot の実行結果をリッチなマークダウンで描画するために Slack Canvas を使用します。1つのスレッドに対して1つの Canvas を作成し、進捗・完了・エラーをリアルタイムに更新します。詳細は [docs/slack-canvas.md](./slack-canvas.md) を参照してください。
 
 ### 3-4. Event Subscriptions の設定
 

@@ -101,21 +101,29 @@ export async function submitJob(ctx: TaskContext): Promise<void> {
     const bullJob = await jobQueue.add("execute", { jobId: job.id });
     const { position } = await getQueuePosition(bullJob.id ?? job.id);
 
-    // スレッド用 Canvas を取得または作成する（Slack専用）
-    const {
-      canvasId,
-      url: canvasUrl,
-      isNew,
-    } = await getOrCreateThreadCanvas("SLACK", ctx.channelId, ctx.threadTs, client);
+    // スレッド用 Canvas を取得または作成する（Slack専用・無料プランでは null が返る）
+    const canvasResult = await getOrCreateThreadCanvas(
+      "SLACK",
+      ctx.channelId,
+      ctx.threadTs,
+      client,
+    );
 
-    const canvasLinkText = isNew
-      ? `📄 作業ログ Canvas を作成しました: <${canvasUrl}|Copilot Catapult Canvas>`
-      : `📄 Canvas で作業ログを確認できます: <${canvasUrl}|Copilot Catapult Canvas>`;
-
-    const queueText =
-      position <= 1
-        ? `📋 ジョブをキューに追加しました\nすぐに開始します\n${canvasLinkText}`
-        : `📋 ジョブをキューに追加しました\n現在の待ち順位: ${position}番目\n${canvasLinkText}`;
+    let queueText: string;
+    if (canvasResult) {
+      const canvasLinkText = canvasResult.isNew
+        ? `📄 作業ログ Canvas を作成しました: <${canvasResult.url}|Copilot Catapult Canvas>`
+        : `📄 Canvas で作業ログを確認できます: <${canvasResult.url}|Copilot Catapult Canvas>`;
+      queueText =
+        position <= 1
+          ? `📋 ジョブをキューに追加しました\nすぐに開始します\n${canvasLinkText}`
+          : `📋 ジョブをキューに追加しました\n現在の待ち順位: ${position}番目\n${canvasLinkText}`;
+    } else {
+      queueText =
+        position <= 1
+          ? `📋 ジョブをキューに追加しました\nすぐに開始します`
+          : `📋 ジョブをキューに追加しました\n現在の待ち順位: ${position}番目`;
+    }
 
     await client.chat.postMessage({
       channel: ctx.channelId,
@@ -123,22 +131,24 @@ export async function submitJob(ctx: TaskContext): Promise<void> {
       text: queueText,
     });
 
-    // JobStreamRelay を起動してリアルタイム進捗を Canvas に反映
+    // JobStreamRelay を起動 (Canvas が使えない場合は自動的にメッセージモードで動作)
     const relay = new JobStreamRelay(
       job.id,
       slackApp,
       ctx.channelId,
       ctx.threadTs,
       ctx.slackUserId,
-      canvasId,
-      canvasUrl,
-      {
-        jobId: job.id,
-        repo: ctx.repo,
-        branch: ctx.branch,
-        task: ctx.task,
-        startedAt: new Date(),
-      },
+      canvasResult?.canvasId ?? null,
+      canvasResult?.url ?? null,
+      canvasResult
+        ? {
+            jobId: job.id,
+            repo: ctx.repo,
+            branch: ctx.branch,
+            task: ctx.task,
+            startedAt: new Date(),
+          }
+        : null,
     );
     await relay.start();
   } else {

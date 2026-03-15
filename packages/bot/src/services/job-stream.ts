@@ -20,6 +20,27 @@ function truncate(text: string, maxLength: number): string {
   return text.slice(0, maxLength) + "...";
 }
 
+// メッセージモード用: Slack section block の文字数上限は 3000 文字
+const SLACK_BLOCK_MAX = 2950;
+
+function splitIntoChunks(text: string, maxLength: number): string[] {
+  if (text.length <= maxLength) return [text];
+  const chunks: string[] = [];
+  const lines = text.split("\n");
+  let current = "";
+  for (const line of lines) {
+    const addition = current ? "\n" + line : line;
+    if ((current + addition).length > maxLength) {
+      if (current) chunks.push(current);
+      current = line.length > maxLength ? line.slice(0, maxLength) : line;
+    } else {
+      current = current + addition;
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
 export class JobStreamRelay {
   private subscriber: Redis | null = null;
   private finished = false;
@@ -34,16 +55,21 @@ export class JobStreamRelay {
   // 前ジョブ履歴（start() 時にDB から取得）
   private previousJobs: PreviousJobSummary[] = [];
 
+  // canvasId が null のとき: メッセージモード（無料プランなど Canvas 非対応ワークスペース用）
+  private readonly canvasMode: boolean;
+
   constructor(
     private readonly jobId: string,
     private readonly slack: App,
     private readonly channelId: string,
     private readonly threadTs: string,
     private readonly slackUserId: string,
-    private readonly canvasId: string,
-    private readonly canvasUrl: string,
-    private readonly jobContext: JobCanvasContext,
-  ) {}
+    private readonly canvasId: string | null,
+    private readonly canvasUrl: string | null,
+    private readonly jobContext: JobCanvasContext | null,
+  ) {
+    this.canvasMode = !!canvasId;
+  }
 
   private buildStopButton(): KnownBlock {
     return {
@@ -61,39 +87,51 @@ export class JobStreamRelay {
   }
 
   async start(): Promise<void> {
-    // 同一スレッドの前ジョブ履歴を取得（Canvas 上部に掲載するため）
-    this.previousJobs = await this.loadPreviousJobs();
+    if (this.canvasMode) {
+      // Canvas モード: 前ジョブ履歴を取得して Canvas を初期化
+      this.previousJobs = await this.loadPreviousJobs();
+      await this.doCanvasUpdate({
+        stepCount: 0,
+        lastTool: null,
+        lastAssistantMessage: null,
+        isDone: false,
+        isError: false,
+        isCancelled: false,
+        finalSummary: null,
+        prUrl: null,
+        errorMessage: null,
+      });
 
-    // Canvas を初期状態（実行中）で更新
-    await this.doCanvasUpdate({
-      stepCount: 0,
-      lastTool: null,
-      lastAssistantMessage: null,
-      isDone: false,
-      isError: false,
-      isCancelled: false,
-      finalSummary: null,
-      prUrl: null,
-      errorMessage: null,
-    });
-
-    // コントロールメッセージ（停止ボタン + Canvas リンク）をスレッドに投稿
-    const result = await this.slack.client.chat.postMessage({
-      channel: this.channelId,
-      thread_ts: this.threadTs,
-      text: `⚙️ 作業中... → ${this.canvasUrl}`,
-      blocks: [
-        {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: `⚙️ 作業中... → <${this.canvasUrl}|📄 Canvas で進捗確認>`,
+      // コントロールメッセージ（停止ボタン + Canvas リンク）をスレッドに投稿
+      const result = await this.slack.client.chat.postMessage({
+        channel: this.channelId,
+        thread_ts: this.threadTs,
+        text: `⚙️ 作業中... → ${this.canvasUrl}`,
+        blocks: [
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `⚙️ 作業中... → <${this.canvasUrl}|📄 Canvas で進捗確認>`,
+            },
           },
-        },
-        this.buildStopButton(),
-      ],
-    });
-    this.controlMessageTs = result.ts ?? null;
+          this.buildStopButton(),
+        ],
+      });
+      this.controlMessageTs = result.ts ?? null;
+    } else {
+      // メッセージモード（Canvas 非対応ワークスペース）: 従来どおり進捗メッセージを投稿
+      const result = await this.slack.client.chat.postMessage({
+        channel: this.channelId,
+        thread_ts: this.threadTs,
+        text: "⚙️ 作業中...",
+        blocks: [
+          { type: "section", text: { type: "mrkdwn", text: "⚙️ 作業中..." } },
+          this.buildStopButton(),
+        ],
+      });
+      this.controlMessageTs = result.ts ?? null;
+    }
 
     this.subscriber = new Redis(process.env["REDIS_URL"]!);
     await this.subscriber.subscribe(`job:${this.jobId}`);
@@ -123,7 +161,7 @@ export class JobStreamRelay {
           if (desc) this.lastTool = desc;
         }
         this.stepCount++;
-        this.scheduleCanvasUpdate();
+        this.scheduleUpdate();
         break;
       }
       case "assistant.message": {
@@ -131,7 +169,7 @@ export class JobStreamRelay {
         if (typeof content === "string" && content.trim()) {
           this.lastAssistantMessage = truncate(content, 200);
         }
-        this.scheduleCanvasUpdate();
+        this.scheduleUpdate();
         break;
       }
       case "done": {
@@ -142,19 +180,28 @@ export class JobStreamRelay {
         }
         const summary = event.summary ?? "タスクが完了しました";
         const prUrl = event.prUrl ?? null;
-        void this.doCanvasUpdate({
-          stepCount: this.stepCount,
-          lastTool: this.lastTool,
-          lastAssistantMessage: this.lastAssistantMessage,
-          isDone: true,
-          isError: false,
-          isCancelled: false,
-          finalSummary: summary,
-          prUrl,
-          errorMessage: null,
-        })
-          .then(() => this.updateControlMessage("done", prUrl))
-          .then(() => this.cleanup());
+        if (this.canvasMode) {
+          void this.doCanvasUpdate({
+            stepCount: this.stepCount,
+            lastTool: this.lastTool,
+            lastAssistantMessage: this.lastAssistantMessage,
+            isDone: true,
+            isError: false,
+            isCancelled: false,
+            finalSummary: summary,
+            prUrl,
+            errorMessage: null,
+          })
+            .then(() => this.updateControlMessage("done", prUrl))
+            .then(() => this.cleanup());
+        } else {
+          const fullSummary = prUrl
+            ? `${summary}\n\n🔀 *作成された PR:* <${prUrl}|PR を開く>`
+            : summary;
+          void this.updateProgressMessage("✅ *完了*")
+            .then(() => this.postSummaryMessage(fullSummary))
+            .then(() => this.cleanup());
+        }
         break;
       }
       case "error": {
@@ -164,19 +211,25 @@ export class JobStreamRelay {
           this.canvasUpdateTimer = null;
         }
         const errorMsg = event.message ?? "Unknown error";
-        void this.doCanvasUpdate({
-          stepCount: this.stepCount,
-          lastTool: this.lastTool,
-          lastAssistantMessage: this.lastAssistantMessage,
-          isDone: false,
-          isError: true,
-          isCancelled: false,
-          finalSummary: null,
-          prUrl: null,
-          errorMessage: errorMsg,
-        })
-          .then(() => this.updateControlMessage("error"))
-          .then(() => this.cleanup());
+        if (this.canvasMode) {
+          void this.doCanvasUpdate({
+            stepCount: this.stepCount,
+            lastTool: this.lastTool,
+            lastAssistantMessage: this.lastAssistantMessage,
+            isDone: false,
+            isError: true,
+            isCancelled: false,
+            finalSummary: null,
+            prUrl: null,
+            errorMessage: errorMsg,
+          })
+            .then(() => this.updateControlMessage("error"))
+            .then(() => this.cleanup());
+        } else {
+          void this.updateProgressMessage(`❌ ${truncate(errorMsg, 500)}`).then(() =>
+            this.cleanup(),
+          );
+        }
         break;
       }
       case "cancelled": {
@@ -185,45 +238,54 @@ export class JobStreamRelay {
           clearTimeout(this.canvasUpdateTimer);
           this.canvasUpdateTimer = null;
         }
+        if (this.canvasMode) {
+          void this.doCanvasUpdate({
+            stepCount: this.stepCount,
+            lastTool: this.lastTool,
+            lastAssistantMessage: this.lastAssistantMessage,
+            isDone: false,
+            isError: false,
+            isCancelled: true,
+            finalSummary: null,
+            prUrl: null,
+            errorMessage: null,
+          })
+            .then(() => this.updateControlMessage("cancelled"))
+            .then(() => this.cleanup());
+        } else {
+          void this.updateProgressMessage("🛑 キャンセルされました").then(() => this.cleanup());
+        }
+        break;
+      }
+    }
+  }
+
+  /** 3 秒スロットリングで Canvas またはメッセージを更新するスケジューラー */
+  private scheduleUpdate(): void {
+    if (this.canvasUpdateTimer || this.finished) return;
+    this.canvasUpdateTimer = setTimeout(() => {
+      this.canvasUpdateTimer = null;
+      if (this.canvasMode) {
         void this.doCanvasUpdate({
           stepCount: this.stepCount,
           lastTool: this.lastTool,
           lastAssistantMessage: this.lastAssistantMessage,
           isDone: false,
           isError: false,
-          isCancelled: true,
+          isCancelled: false,
           finalSummary: null,
           prUrl: null,
           errorMessage: null,
-        })
-          .then(() => this.updateControlMessage("cancelled"))
-          .then(() => this.cleanup());
-        break;
+        });
+      } else {
+        void this.updateProgressMessage(this.buildIndicatorText());
       }
-    }
-  }
-
-  /** Canvas 更新を 3 秒スロットリングでスケジュールする */
-  private scheduleCanvasUpdate(): void {
-    if (this.canvasUpdateTimer || this.finished) return;
-    this.canvasUpdateTimer = setTimeout(() => {
-      this.canvasUpdateTimer = null;
-      void this.doCanvasUpdate({
-        stepCount: this.stepCount,
-        lastTool: this.lastTool,
-        lastAssistantMessage: this.lastAssistantMessage,
-        isDone: false,
-        isError: false,
-        isCancelled: false,
-        finalSummary: null,
-        prUrl: null,
-        errorMessage: null,
-      });
     }, 3000);
   }
 
-  /** Canvas 全体を現在の進捗で更新する */
+  /** Canvas 全体を現在の進捗で更新する（Canvas モード専用） */
   private async doCanvasUpdate(progress: CanvasProgressState): Promise<void> {
+    if (!this.canvasId || !this.jobContext) return;
     try {
       const markdown = buildCanvasMarkdown(this.previousJobs, this.jobContext, progress);
       await updateThreadCanvas(this.canvasId, markdown, this.slack.client);
@@ -232,7 +294,7 @@ export class JobStreamRelay {
     }
   }
 
-  /** コントロールメッセージ（停止ボタン付きメッセージ）を最終状態に更新する */
+  /** コントロールメッセージ（停止ボタン付き）を最終状態に更新する（Canvas モード専用） */
   private async updateControlMessage(
     status: "done" | "error" | "cancelled",
     prUrl?: string | null,
@@ -257,6 +319,52 @@ export class JobStreamRelay {
       });
     } catch (err) {
       console.error(`JobStreamRelay: failed to update control message for job ${this.jobId}:`, err);
+    }
+  }
+
+  /** 進捗インジケーターテキストを構築する（メッセージモード専用） */
+  private buildIndicatorText(): string {
+    let text = `⚙️ 作業中... (ステップ ${this.stepCount})`;
+    if (this.lastTool) text += `\n🔧 \`${this.lastTool}\``;
+    if (this.lastAssistantMessage) text += `\n💬 ${this.lastAssistantMessage}`;
+    return text;
+  }
+
+  /** 進捗メッセージを更新する（メッセージモード専用） */
+  private async updateProgressMessage(text: string): Promise<void> {
+    if (!this.controlMessageTs) return;
+    try {
+      const updateOptions = this.finished
+        ? { channel: this.channelId, ts: this.controlMessageTs, text, blocks: [] as KnownBlock[] }
+        : {
+            channel: this.channelId,
+            ts: this.controlMessageTs,
+            text,
+            blocks: [
+              { type: "section" as const, text: { type: "mrkdwn" as const, text } },
+              this.buildStopButton(),
+            ],
+          };
+      await this.slack.client.chat.update(updateOptions);
+    } catch (err) {
+      console.error(`JobStreamRelay: failed to update message for job ${this.jobId}:`, err);
+    }
+  }
+
+  /** サマリーメッセージを投稿する（メッセージモード専用） */
+  private async postSummaryMessage(summary: string): Promise<void> {
+    const chunks = splitIntoChunks(summary, SLACK_BLOCK_MAX);
+    for (const chunk of chunks) {
+      try {
+        await this.slack.client.chat.postMessage({
+          channel: this.channelId,
+          thread_ts: this.threadTs,
+          text: chunk,
+          blocks: [{ type: "section", text: { type: "mrkdwn", text: chunk } }],
+        });
+      } catch (err) {
+        console.error(`JobStreamRelay: failed to post summary chunk for job ${this.jobId}:`, err);
+      }
     }
   }
 
