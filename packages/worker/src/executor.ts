@@ -175,12 +175,20 @@ export class CopilotExecutor extends EventEmitter {
       deliverableType === "pr" && options.repository
         ? `## 出力形式: PR 作成\n変更をブランチにコミット・プッシュし、\`${options.repository}\` リポジトリにプルリクエストを作成してください。\n`
         : DELIVERABLE_INSTRUCTIONS[deliverableType];
+    const finalAnswerInstruction = `## ユーザーへの最終回答
+すべての作業が完了したら、ユーザーに伝えるべき最終回答を必ず以下のマーカーで囲んで出力してください。
+マーカーの中にはユーザー向けの内容だけを書き、内部作業の整理・状態管理の発言は含めないでください。
+
+<!-- FINAL_ANSWER_START -->
+（ここにユーザーへの最終回答を記述）
+<!-- FINAL_ANSWER_END -->`;
     return [
       deliverableInstruction,
       branchInstruction,
       options.instructions ?? "",
       previousContextSection,
       options.prompt,
+      finalAnswerInstruction,
     ]
       .filter(Boolean)
       .join("\n\n");

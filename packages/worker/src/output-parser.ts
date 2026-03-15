@@ -50,3 +50,26 @@ export function extractFinalAssistantMessage(events: CopilotEvent[]): string | u
 
   return assistantContents.at(-1);
 }
+
+const FINAL_ANSWER_PATTERN =
+  /<!--\s*FINAL_ANSWER_START\s*-->([\s\S]*?)<!--\s*FINAL_ANSWER_END\s*-->/;
+
+/**
+ * assistant.message イベント群から <!-- FINAL_ANSWER_START/END --> マーカーで囲まれた
+ * ユーザー向け最終回答を抽出する。マーカーが見つからない場合は undefined を返す。
+ */
+export function extractFinalAnswer(events: CopilotEvent[]): string | undefined {
+  // 全 assistant.message を結合してマーカーを探す（複数イベントにまたがる可能性を考慮）
+  const allContent = events
+    .filter(
+      (event): event is CopilotEvent & { data: { content: string } } =>
+        event.type === "assistant.message" &&
+        typeof event.data?.content === "string" &&
+        event.data.content.trim().length > 0,
+    )
+    .map((event) => event.data.content)
+    .join("\n");
+
+  const match = allContent.match(FINAL_ANSWER_PATTERN);
+  return match?.[1]?.trim() || undefined;
+}

@@ -3,7 +3,7 @@ import { Worker, type Job } from "bullmq";
 import { Redis } from "ioredis";
 
 import { CopilotExecutor, type CopilotEvent } from "./executor.js";
-import { extractFinalAssistantMessage, extractPrUrl } from "./output-parser.js";
+import { extractFinalAnswer, extractFinalAssistantMessage, extractPrUrl } from "./output-parser.js";
 import { cleanupWorkDir } from "./sandbox.js";
 import { refreshTokenIfNeeded } from "./token-refresher.js";
 
@@ -213,10 +213,10 @@ export function createWorker(): Worker<JobData> {
 
         const prUrl = extractPrUrl(events);
 
-        // Copilot CLI v1.x では assistant.message の content に最終サマリーが含まれる。
+        // マーカー付き最終回答を優先し、なければ最後の assistant.message にフォールバック
         const summary =
+          extractFinalAnswer(events) ??
           extractFinalAssistantMessage(events) ??
-          events.find((e) => e.type === "done")?.summary ??
           "タスクが完了しました";
 
         // Relay がジョブ完了を検知できるよう明示的に done イベントを送信
