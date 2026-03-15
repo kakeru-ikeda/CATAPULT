@@ -189,7 +189,6 @@ export async function showDiscordDeliverableSelect(
               label: "✅ このPRに追加コミット",
               value: "commit_only",
               description: "このPRに追加コミットを積む（推奨）",
-
             },
             {
               label: "🔍 調査・報告",
