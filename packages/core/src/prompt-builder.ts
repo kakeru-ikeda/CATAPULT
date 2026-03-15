@@ -63,11 +63,16 @@ export function buildPrompt(options: ExecuteOptions): string {
         ? `## 出力形式: 既存PRへの追加コミット\n現在のブランチ（\`${options.branch}\`）に変更をコミット・プッシュしてください。\nプルリクエストは新たに作成しないでください（既存のPRが自動更新されます）。\n`
         : DELIVERABLE_INSTRUCTIONS[deliverableType];
 
+  const prTitleInstruction =
+    deliverableType === "pr" && options.repository
+      ? `\n- **1行目**には、このPRで行った変更を端的に表す日本語タイトルを記述してください（例: \`ログイン画面のバリデーションを修正\`）。この1行目がそのままPRのタイトルになります。Markdownの見出し記号（\`#\`）は使わず、プレーンテキストで書いてください。`
+      : "";
+
   const finalAnswerInstruction = `## タスクの完了条件（超重要）
 あなたは非インタラクティブなCLI環境（ワンショット実行）で動作しています。ツールを使用せずにテキストのみで「次に〜します」などの発言をすると、プロセスが即座に終了しタスクが失敗します。作業を継続する場合は、必ずツールの実行を行ってください。
 すべての作業が完了したら、実施した作業の結果をそのままワークスペース直下の \`CATAPULT_SUMMARY.md\` に書き出してください。
 - 内容を要約・整形・書き直しする必要はありません。実際に行った操作の結果を記録してください。
-- このファイルの内容がそのままユーザーに送信されます。ファイルの作成をもってタスク完了とみなします。`;
+- このファイルの内容がそのままユーザーに送信されます。ファイルの作成をもってタスク完了とみなします。${prTitleInstruction}`;
 
   return [
     deliverableInstruction,
