@@ -101,13 +101,12 @@ export async function submitJob(ctx: TaskContext): Promise<void> {
     const bullJob = await jobQueue.add("execute", { jobId: job.id });
     const { position } = await getQueuePosition(bullJob.id ?? job.id);
 
-    // スレッド用 Canvas を取得または作成する（Slack専用・無料プランでは null が返る）
-    const canvasResult = await getOrCreateThreadCanvas(
-      "SLACK",
-      ctx.channelId,
-      ctx.threadTs,
-      client,
-    );
+    // スレッド用 Canvas を取得または作成する
+    // チャットモード（repo が空）または無料プランでは null が返りメッセージモードで動作
+    const canvasResult =
+      ctx.repo !== ""
+        ? await getOrCreateThreadCanvas("SLACK", ctx.channelId, ctx.threadTs, client)
+        : null;
 
     let queueText: string;
     if (canvasResult) {
