@@ -45,6 +45,10 @@ export class LocalCopilotExecutor extends EventEmitter {
 
     console.info(`[executor] Starting copilot-agent in ${workDir} for job ${jobId}`);
     console.info(`[executor] Repository: ${repository}, Branch: ${branch}`);
+    const loggableArgs = args.map((a, i) =>
+      i > 0 && args[i - 1] === "-p" ? `<prompt(${a.length}chars)>` : a,
+    );
+    console.info(`[executor] Command: copilot ${loggableArgs.join(" ")}`);
 
     this.proc = spawn("copilot", args, {
       cwd: workDir,

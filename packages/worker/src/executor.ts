@@ -41,18 +41,24 @@ export class CopilotExecutor extends EventEmitter {
 
     const modelArgs = options.model ? ["--model", options.model] : [];
 
+    const spawnArgs = [
+      "--autopilot",
+      "--allow-all",
+      "--output-format",
+      "json",
+      ...modelArgs,
+      ...CopilotExecutor.DENIED_TOOLS.flatMap((tool) => ["--deny-tool", tool]),
+      "-p",
+      fullPrompt,
+    ];
+    const loggableArgs = spawnArgs.map((a, i) =>
+      i > 0 && spawnArgs[i - 1] === "-p" ? `<prompt(${a.length}chars)>` : a,
+    );
+    console.info(`[Job ${options.jobId}] Command: copilot ${loggableArgs.join(" ")}`);
+
     this.proc = spawn(
       "copilot",
-      [
-        "--autopilot",
-        "--allow-all",
-        "--output-format",
-        "json",
-        ...modelArgs,
-        ...CopilotExecutor.DENIED_TOOLS.flatMap((tool) => ["--deny-tool", tool]),
-        "-p",
-        fullPrompt,
-      ],
+      spawnArgs,
       {
         cwd: workDir,
         env: {
