@@ -175,13 +175,11 @@ export class CopilotExecutor extends EventEmitter {
       deliverableType === "pr" && options.repository
         ? `## 出力形式: PR 作成\n変更をブランチにコミット・プッシュし、\`${options.repository}\` リポジトリにプルリクエストを作成してください。\n`
         : DELIVERABLE_INSTRUCTIONS[deliverableType];
-    const finalAnswerInstruction = `## ユーザーへの最終回答
-すべての作業が完了したら、ユーザーに伝えるべき最終回答を必ず以下のマーカーで囲んで出力してください。
-マーカーの中にはユーザー向けの内容だけを書き、内部作業の整理・状態管理の発言は含めないでください。
+    const finalAnswerInstruction = `## 環境の制約とタスクの完了条件（超重要）
+あなたは非インタラクティブなCLI環境（ワンショット実行）で動作しています。ツールを使用せずにテキストのみで「次に〜します」などの発言をすると、プロセスが即座に終了しタスクが失敗します。作業を継続する場合は、必ずツールの実行を行ってください。
 
-<!-- FINAL_ANSWER_START -->
-（ここにユーザーへの最終回答を記述）
-<!-- FINAL_ANSWER_END -->`;
+すべての作業が完了したら、ユーザーに報告すべき最終的なサマリー（調査結果、レビュー内容、PR作成結果など）を、ワークスペース直下に \`CATAPULT_SUMMARY.md\` というファイル名で書き出してください。
+システムはこのファイルの内容を読み取ってユーザーに送信します。ファイルの作成をもってタスク完了とみなします。`;
     return [
       deliverableInstruction,
       branchInstruction,

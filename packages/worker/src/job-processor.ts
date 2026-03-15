@@ -1,9 +1,12 @@
+import { readFile } from "fs/promises";
+import path from "path";
+
 import { PrismaClient } from "@prisma/client";
 import { Worker, type Job } from "bullmq";
 import { Redis } from "ioredis";
 
 import { CopilotExecutor, type CopilotEvent } from "./executor.js";
-import { extractFinalAnswer, extractFinalAssistantMessage, extractPrUrl } from "./output-parser.js";
+import { extractFinalAssistantMessage, extractPrUrl } from "./output-parser.js";
 import { cleanupWorkDir } from "./sandbox.js";
 import { refreshTokenIfNeeded } from "./token-refresher.js";
 
@@ -213,11 +216,18 @@ export function createWorker(): Worker<JobData> {
 
         const prUrl = extractPrUrl(events);
 
-        // マーカー付き最終回答を優先し、なければ最後の assistant.message にフォールバック
-        const summary =
-          extractFinalAnswer(events) ??
-          extractFinalAssistantMessage(events) ??
-          "タスクが完了しました";
+        // ファイルベースでの最終回答の取得を優先する
+        let summary: string;
+        try {
+          const workDir = `/tmp/copilot-jobs/${jobId}/workspace`;
+          const summaryFilePath = path.join(workDir, "CATAPULT_SUMMARY.md");
+          summary = await readFile(summaryFilePath, "utf-8");
+        } catch (err) {
+          const fallbackMessage = extractFinalAssistantMessage(events);
+          summary = fallbackMessage
+            ? `⚠️ **サマリーファイルが生成されずにプロセスが終了しました**\n\n【最後のアシスタント発言】\n${fallbackMessage}`
+            : "タスクが完了しました（報告内容の生成なし）";
+        }
 
         // Relay がジョブ完了を検知できるよう明示的に done イベントを送信
         await redis.publish(`job:${jobId}`, JSON.stringify({ type: "done", summary, prUrl }));
