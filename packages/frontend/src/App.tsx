@@ -23,7 +23,7 @@ import {
 import { GlobalMcpToolsView, GlobalMcpToolShow } from "./pages/user/GlobalMcpToolsView.js";
 import { GlobalSkillsView, GlobalSkillShow } from "./pages/user/GlobalSkillsView.js";
 import { McpToolSettings } from "./pages/user/McpToolSettings.js";
-import { MyInstructions } from "./pages/user/MyInstructions.js";
+import { MyInstructions, MyInstructionEdit } from "./pages/user/MyInstructions.js";
 import { MyJobs } from "./pages/user/MyJobs.js";
 import { MySkills, MySkillEdit } from "./pages/user/MySkills.js";
 
@@ -55,7 +55,7 @@ export const App = () => (
           )}
           {/* 利用者モード */}
           <Resource name="jobs" list={MyJobs} show={JobShow} />
-          <Resource name="instructions" list={MyInstructions} />
+          <Resource name="instructions" list={MyInstructions} edit={MyInstructionEdit} />
           <Resource name="mcp-tools" list={McpToolSettings} />
           <Resource name="skills" list={MySkills} edit={MySkillEdit} />
           {/* グローバル設定の閲覧（一般ユーザー） */}
