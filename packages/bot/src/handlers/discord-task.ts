@@ -28,6 +28,18 @@ const jobGuard = new JobGuard();
 // "owner/repo" パターンを検出する正規表現
 const REPO_PATTERN = /([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)/;
 
+/**
+ * セッション識別子として使う Discord チャンネルIDを返す。
+ * ボットが作成する進捗スレッド内からのメンションを考慮し、
+ * スレッドの場合は親チャンネルIDを使用する。
+ */
+function getSessionId(message: Message): string {
+  if (message.channel.isThread()) {
+    return message.channel.parentId ?? message.channelId;
+  }
+  return message.channelId;
+}
+
 type DeliverableType = "pr" | "report" | "commit_only" | "review";
 
 const DELIVERABLE_LABELS: Record<DeliverableType, string> = {
@@ -57,11 +69,14 @@ async function submitDiscordJob(
     throw err;
   }
 
-  // Discord スレッド内メンションの場合 channelId = thread.id → 前回ジョブを検索（軽量セッション）
+  // Discord スレッド内メンションの場合でも親チャンネルIDで統一（進捗スレッドからのメンションでも正しく継続できる）
+  const sessionId = getSessionId(message);
+
+  // 前回ジョブを検索（軽量セッション）
   const parentJob = await prisma.job.findFirst({
     where: {
       userId: user.id,
-      threadId: message.channelId,
+      threadId: sessionId,
       status: "COMPLETED",
     },
     orderBy: { completedAt: "desc" },
@@ -77,8 +92,8 @@ async function submitDiscordJob(
       status: "PENDING",
       platform: "DISCORD",
       channelId: message.channelId,
-      // スレッド識別子として message.channelId を使用（進捗スレッドIDではなく会話チャンネルIDで統一）
-      threadId: message.channelId,
+      // セッション識別子は親チャンネルIDで統一（進捗スレッドIDではない）
+      threadId: sessionId,
       parentJobId: parentJob?.id ?? null,
       deliverableType:
         deliverableType === "pr"
@@ -511,8 +526,9 @@ export async function handleDiscordTask(user: User, text: string, message: Messa
   }
 
   // スレッド継続パターン: 同一チャンネル（スレッド）の直前 COMPLETED ジョブからリポジトリ・ブランチを引き継ぐ
+  const sessionId = getSessionId(message);
   const sessionJob = await prisma.job.findFirst({
-    where: { userId: user.id, threadId: message.channelId, status: "COMPLETED" },
+    where: { userId: user.id, threadId: sessionId, status: "COMPLETED" },
     orderBy: { completedAt: "desc" },
     select: { repository: true, branch: true, workerBranch: true, prUrl: true },
   });
