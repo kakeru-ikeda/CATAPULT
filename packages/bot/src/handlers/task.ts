@@ -37,6 +37,7 @@ export interface TaskContext {
   slackUserId: string;
   executionMode?: "SERVER" | "LOCAL";
   localAgentId?: string;
+  model?: string;
 }
 
 export async function submitJob(ctx: TaskContext): Promise<void> {
@@ -93,6 +94,7 @@ export async function submitJob(ctx: TaskContext): Promise<void> {
               : "REVIEW",
       executionMode: isLocal ? "LOCAL" : "SERVER",
       ...(isLocal ? { localAgentId: ctx.localAgentId } : {}),
+      ...(ctx.model ? { model: ctx.model } : {}),
     },
   });
 

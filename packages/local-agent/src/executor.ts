@@ -24,11 +24,14 @@ export class LocalCopilotExecutor extends EventEmitter {
     // @catapult/core の共有プロンプト生成を使用
     const finalPrompt = buildPrompt(options);
 
+    const modelArgs = options.model ? ["--model", options.model] : [];
+
     const args = [
       "--autopilot",
       "--allow-all",
       "--output-format",
       "json",
+      ...modelArgs,
       "-p",
       finalPrompt,
       ...denyArgs,

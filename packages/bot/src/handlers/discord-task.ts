@@ -19,6 +19,7 @@ import {
   verifyInstallation,
 } from "../services/github-repos.js";
 import { JobGuard, JobLimitError } from "../services/job-guard.js";
+import { fetchAvailableModels } from "../services/models.js";
 import { getQueuePosition } from "../services/queue-status.js";
 
 const prisma = new PrismaClient();
@@ -58,6 +59,7 @@ async function submitDiscordJob(
   message: Message,
   executionMode: "SERVER" | "LOCAL" = "SERVER",
   localAgentId?: string,
+  model?: string,
 ): Promise<void> {
   try {
     await jobGuard.check(user.id, repo);
@@ -105,6 +107,7 @@ async function submitDiscordJob(
               : "REVIEW",
       executionMode: executionMode === "LOCAL" && localAgentId ? "LOCAL" : "SERVER",
       ...(executionMode === "LOCAL" && localAgentId ? { localAgentId } : {}),
+      ...(model ? { model } : {}),
     },
   });
 
@@ -177,6 +180,7 @@ export async function showDiscordDeliverableSelect(
     select: { id: true, name: true },
   });
 
+  const availableModels = await fetchAvailableModels();
   const hasPr = !!sessionCtx?.prUrl;
 
   const deliverableSelect = new StringSelectMenuBuilder()
@@ -258,6 +262,24 @@ export async function showDiscordDeliverableSelect(
     components.push(executionModeRow);
   }
 
+  if (availableModels.length > 0) {
+    const modelSelect = new StringSelectMenuBuilder()
+      .setCustomId(`model_select:${message.id}`)
+      .setPlaceholder("モデルを選択...")
+      .addOptions([
+        {
+          label: "🤖 Auto",
+          value: "auto",
+          description: "デフォルト（Copilot が自動選択）",
+        },
+        ...availableModels.slice(0, 24).map((m) => ({
+          label: m.displayName ?? m.name,
+          value: m.name,
+        })),
+      ]);
+    components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(modelSelect));
+  }
+
   await replyMsg.edit({
     content:
       repo === ""
@@ -271,6 +293,7 @@ export async function showDiscordDeliverableSelect(
   // 選択状態
   let selectedDeliverable: DeliverableType | null = null;
   let selectedExecutionMode: string = "server";
+  let selectedModel: string | undefined = undefined;
 
   const collector = replyMsg.createMessageComponentCollector({
     filter: (i) => i.user.id === message.author.id,
@@ -286,6 +309,9 @@ export async function showDiscordDeliverableSelect(
         selectedDeliverable = interaction.values[0] as DeliverableType;
       } else if (interaction.customId.startsWith("execution_mode_select:")) {
         selectedExecutionMode = interaction.values[0] ?? "server";
+      } else if (interaction.customId.startsWith("model_select:")) {
+        const val = interaction.values[0];
+        selectedModel = val === "auto" ? undefined : val;
       }
 
       // 両方選択済みになったら（またはエージェントなし＝deliverableのみ）ジョブ投入
@@ -324,6 +350,7 @@ export async function showDiscordDeliverableSelect(
         message,
         isLocal ? "LOCAL" : "SERVER",
         localAgentId,
+        selectedModel,
       );
     }
   });

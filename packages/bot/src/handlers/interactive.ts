@@ -3,6 +3,7 @@ import type { App, BlockAction, StaticSelectAction } from "@slack/bolt";
 import Redis from "ioredis";
 
 import { listBranches, recordRecentBranch, recordRecentRepo } from "../services/github-repos.js";
+import { fetchAvailableModels } from "../services/models.js";
 
 import { showConfirmation, submitJob, type TaskContext, type DeliverableType } from "./task.js";
 
@@ -99,6 +100,7 @@ export function registerInteractiveHandlers(app: App): void {
 
     await recordRecentRepo(accountLink.user.id, repo);
     const branches = await listBranches(accountLink.user.id, repo);
+    const availableModels = await fetchAvailableModels();
 
     // ブランチ選択モーダルを開く
     await client.views.open({
@@ -192,6 +194,30 @@ export function registerInteractiveHandlers(app: App): void {
             },
             label: { type: "plain_text", text: "完了形式" },
           },
+          {
+            type: "input",
+            block_id: "model_block",
+            optional: true,
+            element: {
+              type: "static_select",
+              action_id: "model_select",
+              initial_option: {
+                text: { type: "plain_text" as const, text: "🤖 Auto" },
+                value: "auto",
+              },
+              options: [
+                {
+                  text: { type: "plain_text" as const, text: "🤖 Auto" },
+                  value: "auto",
+                },
+                ...availableModels.map((m) => ({
+                  text: { type: "plain_text" as const, text: m.displayName ?? m.name },
+                  value: m.name,
+                })),
+              ],
+            },
+            label: { type: "plain_text", text: "モデル" },
+          },
         ],
       },
     });
@@ -235,6 +261,11 @@ export function registerInteractiveHandlers(app: App): void {
     const isLocal = executionModeValue.startsWith("local:");
     const localAgentId = isLocal ? executionModeValue.slice("local:".length) : undefined;
 
+    // モデル選択（optional: 未選択または "auto" の場合は undefined）
+    const modelValue =
+      view.state.values["model_block"]?.["model_select"]?.selected_option?.value ?? "auto";
+    const model = modelValue === "auto" ? undefined : modelValue;
+
     const user = await prisma.user.findUniqueOrThrow({ where: { id: metadata.userId } });
 
     // モーダルでブランチ＋完了形式を選択済み = 確認完了 → 直接ジョブ投入
@@ -249,6 +280,7 @@ export function registerInteractiveHandlers(app: App): void {
       slackUserId: metadata.slackUserId,
       executionMode: isLocal ? "LOCAL" : "SERVER",
       localAgentId,
+      model,
     });
   });
 

@@ -39,6 +39,8 @@ export class CopilotExecutor extends EventEmitter {
 
     const fullPrompt = buildPrompt(options);
 
+    const modelArgs = options.model ? ["--model", options.model] : [];
+
     this.proc = spawn(
       "copilot",
       [
@@ -46,6 +48,7 @@ export class CopilotExecutor extends EventEmitter {
         "--allow-all",
         "--output-format",
         "json",
+        ...modelArgs,
         ...CopilotExecutor.DENIED_TOOLS.flatMap((tool) => ["--deny-tool", tool]),
         "-p",
         fullPrompt,

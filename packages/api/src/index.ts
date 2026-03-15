@@ -5,6 +5,7 @@ import { authRouter } from "./routes/auth.js";
 import { instructionsRouter } from "./routes/instructions.js";
 import { jobsRouter } from "./routes/jobs.js";
 import { mcpToolsRouter } from "./routes/mcp-tools.js";
+import { modelsRouter } from "./routes/models.js";
 import { skillsRouter } from "./routes/skills.js";
 import { usersRouter } from "./routes/users.js";
 
@@ -37,6 +38,7 @@ app.use("/api/mcp-tools", mcpToolsRouter);
 app.use("/api/instructions", instructionsRouter);
 app.use("/api/skills", skillsRouter);
 app.use("/api/agents", agentsRouter);
+app.use("/api/models", modelsRouter);
 
 const server = app.listen(PORT, () => {
   console.info(`🚀 CATAPULT API Server is running on port ${PORT}`);

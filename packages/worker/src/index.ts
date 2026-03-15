@@ -3,6 +3,7 @@ import cron from "node-cron";
 
 import { createWorker, prisma as jobPrisma, redis as jobRedis } from "./job-processor.js";
 import { batchRefreshExpiringTokens } from "./token-refresher.js";
+import { parseAvailableModels } from "./utils.js";
 
 async function waitForDatabase(maxRetries = 10, delayMs = 3000): Promise<void> {
   const prisma = new PrismaClient();
@@ -21,11 +22,29 @@ async function waitForDatabase(maxRetries = 10, delayMs = 3000): Promise<void> {
   throw new Error("Failed to connect to database after retries");
 }
 
+async function syncCopilotModels(): Promise<void> {
+  const models = await parseAvailableModels();
+  if (models.length === 0) {
+    console.info("[syncCopilotModels] No models found from CLI, skipping");
+    return;
+  }
+  for (const [index, name] of models.entries()) {
+    await jobPrisma.copilotModel.upsert({
+      where: { name },
+      update: { sortOrder: index },
+      create: { name, sortOrder: index },
+    });
+  }
+  console.info(`[syncCopilotModels] Synced ${models.length} model(s)`);
+}
+
 // Worker が DB 準備完了前にジョブを拾わないよう DB 確認後に生成する
 await waitForDatabase();
 // 共有 PrismaClient のコネクションプールをここで明示的に確立する
 // (アイドル後の遅延接続による PrismaClientInitializationError を防ぐ)
 await jobPrisma.$connect();
+// 起動時に利用可能モデルを DB に同期する
+await syncCopilotModels();
 const worker = createWorker();
 
 worker.on("completed", (job) => {

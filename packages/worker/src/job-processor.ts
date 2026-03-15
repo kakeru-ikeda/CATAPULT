@@ -233,6 +233,7 @@ export function createWorker(): Worker<JobData> {
                 : dbJob.deliverableType === "COMMIT_ONLY"
                   ? "commit_only"
                   : "review",
+          model: dbJob.model ?? undefined,
         });
 
         const prUrl = extractPrUrl(events);

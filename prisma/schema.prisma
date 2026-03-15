@@ -113,6 +113,7 @@ model Job {
     deliverableType DeliverableType @default(PR)
     executionMode   ExecutionMode   @default(SERVER)
     localAgentId    String? // ローカルエージェント実行時のエージェント ID
+    model           String? // 実行モデル（null = Auto）
     startedAt       DateTime?
     completedAt     DateTime?
     createdAt       DateTime        @default(now())
@@ -221,4 +222,15 @@ model LocalAgent {
 
     user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
     jobs Job[]
+}
+
+// Copilot CLI が対応するモデル一覧
+model CopilotModel {
+    id          String   @id @default(cuid())
+    name        String   @unique // CLI の値そのまま（例: "claude-sonnet-4.6"）
+    displayName String? // 表示名（省略時は name をそのまま表示）
+    enabled     Boolean  @default(true) // false: ドロップダウンに表示しない
+    sortOrder   Int      @default(0) // ドロップダウンの表示順（昇順）
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
 }
