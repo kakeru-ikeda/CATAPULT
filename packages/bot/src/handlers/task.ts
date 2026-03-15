@@ -160,6 +160,11 @@ export async function submitJob(ctx: TaskContext): Promise<void> {
   }
 }
 
+interface SessionContext {
+  prUrl: string;
+  workerBranch: string;
+}
+
 export async function showConfirmation(
   user: User,
   repo: string,
@@ -169,6 +174,7 @@ export async function showConfirmation(
   threadTs: string,
   slackUserId: string,
   client: WebClient,
+  sessionCtx?: SessionContext,
 ): Promise<void> {
   const ctxBase64 = Buffer.from(
     JSON.stringify({
@@ -182,21 +188,35 @@ export async function showConfirmation(
     }),
   ).toString("base64");
 
-  const deliverableButtons = (
-    [
-      { value: "pr" as DeliverableType, label: "🔀 PR 作成" },
-      { value: "report" as DeliverableType, label: "🔍 調査・報告" },
-      { value: "commit_only" as DeliverableType, label: "📝 コミットのみ" },
-      { value: "review" as DeliverableType, label: "👁 コードレビュー" },
-    ] as const
-  ).map(({ value, label }) => ({
+  // PR 継続時: commit_only を先頭・primary に昇格、pr を「別PR作成」に変更
+  const hasPr = !!sessionCtx?.prUrl;
+  const buttonDefs: Array<{ value: DeliverableType; label: string; primary?: boolean }> = hasPr
+    ? [
+        { value: "commit_only", label: "✅ このPRに追加コミット", primary: true },
+        { value: "report", label: "🔍 調査・報告" },
+        { value: "pr", label: "🔀 別PR を作成" },
+        { value: "review", label: "👁 コードレビュー" },
+      ]
+    : [
+        { value: "pr", label: "🔀 PR 作成" },
+        { value: "report", label: "🔍 調査・報告" },
+        { value: "commit_only", label: "📝 コミットのみ" },
+        { value: "review", label: "👁 コードレビュー" },
+      ];
+
+  const deliverableButtons = buttonDefs.map(({ value, label, primary }) => ({
     type: "button" as const,
     text: { type: "plain_text" as const, text: label },
     // Slack は同一メッセージ内で action_id がユニークである必要があるため deliverableType を付与
     action_id: `submit_job_${value}`,
     // value = base64(ctx):deliverableType:slackUserId
     value: `${ctxBase64}:${value}:${slackUserId}`,
+    ...(primary ? { style: "primary" as const } : {}),
   }));
+
+  // PR 継続時はセクションテキストに前回の PR リンクを表示
+  const prLine = sessionCtx?.prUrl ? `\n*前回のPR:* <${sessionCtx.prUrl}|PR を確認>` : "";
+  const sectionText = `*リポジトリ:* \`${repo}\`\n*ブランチ:* \`${branch}\`${prLine}\n*タスク:* ${task}\n\nどの形式で完了しますか？`;
 
   await client.chat.postMessage({
     channel: channelId,
@@ -205,10 +225,7 @@ export async function showConfirmation(
     blocks: [
       {
         type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `*リポジトリ:* \`${repo}\`\n*ブランチ:* \`${branch}\`\n*タスク:* ${task}\n\nどの形式で完了しますか？`,
-        },
+        text: { type: "mrkdwn", text: sectionText },
       },
       {
         type: "actions",
@@ -246,18 +263,24 @@ export async function handleTask(
     const sessionJob = await prisma.job.findFirst({
       where: { userId: user.id, threadId: threadTs, status: "COMPLETED" },
       orderBy: { completedAt: "desc" },
-      select: { repository: true, branch: true, workerBranch: true },
+      select: { repository: true, branch: true, workerBranch: true, prUrl: true },
     });
     if (sessionJob) {
+      const continueBranch = sessionJob.workerBranch ?? sessionJob.branch;
+      const sessionCtx =
+        sessionJob.prUrl && sessionJob.workerBranch
+          ? { prUrl: sessionJob.prUrl, workerBranch: sessionJob.workerBranch }
+          : undefined;
       await showConfirmation(
         user,
         sessionJob.repository,
-        sessionJob.workerBranch ?? sessionJob.branch,
+        continueBranch,
         text,
         channelId,
         threadTs,
         slackUserId,
         client,
+        sessionCtx,
       );
       return;
     }

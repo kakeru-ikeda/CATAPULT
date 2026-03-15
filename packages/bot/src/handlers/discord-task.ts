@@ -132,6 +132,11 @@ async function submitDiscordJob(
   await relay.start();
 }
 
+interface SessionContext {
+  prUrl: string;
+  workerBranch: string;
+}
+
 export async function showDiscordDeliverableSelect(
   user: User,
   task: string,
@@ -139,6 +144,7 @@ export async function showDiscordDeliverableSelect(
   branch: string,
   message: Message,
   replyMsg: Message,
+  sessionCtx?: SessionContext,
 ): Promise<void> {
   const oneMinuteAgo = new Date(Date.now() - 60_000);
   await prisma.localAgent.updateMany({
@@ -156,31 +162,59 @@ export async function showDiscordDeliverableSelect(
     select: { id: true, name: true },
   });
 
+  const hasPr = !!sessionCtx?.prUrl;
+
   const deliverableSelect = new StringSelectMenuBuilder()
     .setCustomId(`deliverable_select:${message.id}`)
     .setPlaceholder("完了形式を選択...")
-    .addOptions([
-      {
-        label: "🔀 PR 作成",
-        value: "pr",
-        description: "変更してプルリクエストを作成",
-      },
-      {
-        label: "🔍 調査・報告",
-        value: "report",
-        description: "コードを変更せず調査・報告",
-      },
-      {
-        label: "📝 コミットのみ",
-        value: "commit_only",
-        description: "ブランチにコミット。PR なし",
-      },
-      {
-        label: "👁 コードレビュー",
-        value: "review",
-        description: "変更なし、レビュー結果を投稿",
-      },
-    ]);
+    .addOptions(
+      hasPr
+        ? [
+            {
+              label: "✅ このPRに追加コミット",
+              value: "commit_only",
+              description: "このPRに追加コミットを積む（推奨）",
+              default: true,
+            },
+            {
+              label: "🔍 調査・報告",
+              value: "report",
+              description: "コードを変更せず調査・報告",
+            },
+            {
+              label: "🔀 別PR を作成",
+              value: "pr",
+              description: "別のPRを新たに作成する",
+            },
+            {
+              label: "👁 コードレビュー",
+              value: "review",
+              description: "変更なし、レビュー結果を投稿",
+            },
+          ]
+        : [
+            {
+              label: "🔀 PR 作成",
+              value: "pr",
+              description: "変更してプルリクエストを作成",
+            },
+            {
+              label: "🔍 調査・報告",
+              value: "report",
+              description: "コードを変更せず調査・報告",
+            },
+            {
+              label: "📝 コミットのみ",
+              value: "commit_only",
+              description: "ブランチにコミット。PR なし",
+            },
+            {
+              label: "👁 コードレビュー",
+              value: "review",
+              description: "変更なし、レビュー結果を投稿",
+            },
+          ],
+    );
 
   const deliverableRow = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
     deliverableSelect,
@@ -215,7 +249,9 @@ export async function showDiscordDeliverableSelect(
     content:
       repo === ""
         ? `💬 **チャットエージェントモード** でどの形式で完了しますか？\n**タスク:** ${task}`
-        : `**${repo}** \`${branch}\` でどの形式で完了しますか？\n**タスク:** ${task}`,
+        : hasPr
+          ? `**${repo}** \`${branch}\` の継続（[PR を確認](${sessionCtx.prUrl})\uff09\n**タスク:** ${task}`
+          : `**${repo}** \`${branch}\` でどの形式で完了しますか？\n**タスク:** ${task}`,
     components,
   });
 
@@ -478,12 +514,18 @@ export async function handleDiscordTask(user: User, text: string, message: Messa
   const sessionJob = await prisma.job.findFirst({
     where: { userId: user.id, threadId: message.channelId, status: "COMPLETED" },
     orderBy: { completedAt: "desc" },
-    select: { repository: true, branch: true, workerBranch: true },
+    select: { repository: true, branch: true, workerBranch: true, prUrl: true },
   });
   if (sessionJob) {
     const continueBranch = sessionJob.workerBranch ?? sessionJob.branch;
+    const sessionCtx =
+      sessionJob.prUrl && sessionJob.workerBranch
+        ? { prUrl: sessionJob.prUrl, workerBranch: sessionJob.workerBranch }
+        : undefined;
     const replyMsg = await message.reply({
-      content: `🔄 前回の **${sessionJob.repository}** \`${continueBranch}\` を継続します。どの形式で完了しますか？`,
+      content: sessionCtx
+        ? `🔄 前回の **${sessionJob.repository}** \`${continueBranch}\` (前回: ${sessionCtx.prUrl}) を継続します。どの形式で完了しますか？`
+        : `🔄 前回の **${sessionJob.repository}** \`${continueBranch}\` を継続します。どの形式で完了しますか？`,
     });
     await showDiscordDeliverableSelect(
       user,
@@ -492,6 +534,7 @@ export async function handleDiscordTask(user: User, text: string, message: Messa
       continueBranch,
       message,
       replyMsg,
+      sessionCtx,
     );
     return;
   }
