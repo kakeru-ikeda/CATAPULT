@@ -45,9 +45,11 @@ const REPO_PATTERN = /([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)/;
  */
 function getSessionId(message: Message): string {
   if (message.channel.isThread()) {
+    // スレッド内メンション: 親チャンネルIDで統一してセッションを継続
     return message.channel.parentId ?? message.channelId;
   }
-  return message.channelId;
+  // 親チャンネルからのメンション: メッセージIDを使い毎回独立セッションとして扱う（履歴引き継ぎなし）
+  return message.id;
 }
 
 type DeliverableType = "pr" | "report" | "commit_only" | "review";

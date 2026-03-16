@@ -259,6 +259,16 @@ router.get("/global/:id", authMiddleware, async (req: Request, res: Response) =>
 
 // グローバルスキル更新 PUT /api/skills/global/:id (管理者)
 router.put("/global/:id", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
+  const target = await prisma.skill.findUnique({ where: { id: req.params["id"] as string } });
+  if (!target) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  if (target.isSystem) {
+    res.status(403).json({ error: "システム組み込みスキルは変更できません" });
+    return;
+  }
+
   const { name, displayName, description, content, enabled, version } = req.body as {
     name?: string;
     displayName?: string;
@@ -287,6 +297,15 @@ router.delete(
   authMiddleware,
   adminMiddleware,
   async (req: Request, res: Response) => {
+    const target = await prisma.skill.findUnique({ where: { id: req.params["id"] as string } });
+    if (!target) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (target.isSystem) {
+      res.status(403).json({ error: "システム組み込みスキルは削除できません" });
+      return;
+    }
     await prisma.skill.delete({ where: { id: req.params["id"] as string } });
     await auditLog(req.user!.id, "skill.delete.global", `skill:${req.params["id"] as string}`);
     res.json({ id: req.params["id"] as string });

@@ -29,6 +29,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+    command: sh -c "npx prisma migrate deploy && node dist/prisma/seed.js && node packages/api/dist/index.js"
     networks:
       default:
       catapult-proxy:

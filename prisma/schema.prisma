@@ -177,6 +177,7 @@ model Skill {
     scope       SkillScope @default(USER)
     ownerId     String? // scope=GLOBAL の場合は null
     enabled     Boolean    @default(true)
+    isSystem    Boolean    @default(false) // true: システム組み込みスキル（管理者でも削除・変更不可）
     version     String     @default("1.0.0")
     sourceZip   Bytes? // ZIP アップロード時の元データ
     createdAt   DateTime   @default(now())
