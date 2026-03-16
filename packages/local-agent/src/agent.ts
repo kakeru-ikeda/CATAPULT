@@ -1,6 +1,8 @@
 import { exec } from "child_process";
 import { promisify } from "util";
 
+import { extractPreferredBranchNameFromPrompt } from "@catapult/core";
+
 import type { AgentConfig } from "./config.js";
 import { EventReporter } from "./event-reporter.js";
 import { LocalCopilotExecutor } from "./executor.js";
@@ -129,6 +131,10 @@ async function runJob(config: AgentConfig, jobId: string): Promise<void> {
         branch: job.branch,
         githubToken: job.githubToken,
         branchMode: job.branchMode,
+        preferredBranchName:
+          job.deliverableType === "pr"
+            ? extractPreferredBranchNameFromPrompt(job.prompt)
+            : undefined,
         deliverableType: job.deliverableType as "pr" | "report" | "commit_only" | "review",
         instructions: job.instructions ?? undefined,
         conversationHistory: job.conversationHistory,

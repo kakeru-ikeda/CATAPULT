@@ -21,6 +21,8 @@ export interface ExecuteOptions {
   instructions?: string;
   /** 新ブランチを作成するか、既存ブランチで続行するかの明示的指定。未指定時は new として扱う */
   branchMode?: "new" | "existing";
+  /** ユーザーが指定した任意の作業ブランチ名。指定時はハッシュベースの命名規則より優先される */
+  preferredBranchName?: string;
   /** スレッド内の過去ターン履歴（時系列昇順）。空配列または undefined の場合は省略 */
   conversationHistory?: ConversationTurn[];
   deliverableType?: DeliverableType;

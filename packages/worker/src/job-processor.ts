@@ -2,7 +2,12 @@ import { readFile } from "fs/promises";
 import path from "path";
 
 import type { CopilotEvent } from "@catapult/core";
-import { extractFinalAssistantMessage, extractPrUrl, extractWorkerBranch } from "@catapult/core";
+import {
+  extractFinalAssistantMessage,
+  extractPreferredBranchNameFromPrompt,
+  extractPrUrl,
+  extractWorkerBranch,
+} from "@catapult/core";
 import { PrismaClient } from "@prisma/client";
 import { Worker, type Job } from "bullmq";
 import { Redis } from "ioredis";
@@ -226,6 +231,10 @@ export function createWorker(): Worker<JobData> {
             dbJob.parentJobId !== null && dbJob.deliverableType === "COMMIT_ONLY"
               ? "existing"
               : "new",
+          preferredBranchName:
+            dbJob.deliverableType === "PR"
+              ? extractPreferredBranchNameFromPrompt(dbJob.prompt)
+              : undefined,
           deliverableType:
             dbJob.deliverableType === "PR"
               ? "pr"
