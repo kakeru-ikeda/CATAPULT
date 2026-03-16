@@ -10,6 +10,22 @@ function formatConversationHistory(history: ConversationTurn[]): string {
     .join("\n\n---\n\n");
 }
 
+/**
+ * buildPromptWithPreferredBranchName で埋め込まれたブランチ名をプロンプト文字列から取り出す。
+ * 対応するセクションが見つからない場合は undefined を返す。
+ *
+ * @remarks
+ * このパターンは packages/bot/src/handlers/branch-preference.ts の
+ * buildPromptWithPreferredBranchName が生成するテキストと対応している。
+ * そちらのフォーマットを変更する際は、ここの正規表現も合わせて更新すること。
+ */
+export function extractPreferredBranchNameFromPrompt(prompt: string): string | undefined {
+  const match = prompt.match(
+    /## 追加要件: 作業ブランチ名\nPR を作成する場合は、新しい作業ブランチ名として `([^`]+)` を必ず使用してください。/,
+  );
+  return match?.[1];
+}
+
 const DELIVERABLE_INSTRUCTIONS: Record<DeliverableType, string> = {
   pr: "",
   report: `## 出力形式: 調査・報告
@@ -44,7 +60,13 @@ export function buildPrompt(options: ExecuteOptions): string {
 現在チェックアウトされているブランチ（\`${options.branch}\`）で直接作業してください。
 新しいブランチを作成してはいけません。このブランチに変更をコミット・プッシュしてください。
 `
-      : `
+      : options.preferredBranchName
+        ? `
+## 重要: ブランチ名
+作業ブランチを作成する際は、必ず \`${options.preferredBranchName}\` という名前を使用してください。
+別の名前でブランチを作成しないでください。
+`
+        : `
 ## 重要: ブランチ名の形式
 作業ブランチを作成する際は、必ず以下の形式を使用してください:
   copilot/job-${jobShortId}/<機能名>
