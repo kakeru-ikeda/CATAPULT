@@ -63,6 +63,8 @@ const prompt = [branchInstruction, instructions ?? "", previousContextSection, u
 
 `previousContext` には `resultSummary`（＋PR URL があれば付記）が格納されます。
 
+なお、過去ターンの `prompt` にシステムが追記した「preferredBranchName 強制」セクションは、会話履歴へ再注入する前に除去します。これにより、前回ジョブで指定した作業ブランチ名が次ターン以降の継続ジョブを不必要に拘束しません。
+
 ---
 
 ## プラットフォーム別スレッドID解決

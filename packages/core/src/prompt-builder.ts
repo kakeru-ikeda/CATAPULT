@@ -1,11 +1,31 @@
 import { ConversationTurn, DeliverableType, ExecuteOptions } from "./types.js";
 
+const PREFERRED_BRANCH_REQUIREMENT_MARKER = "\n\n## 追加要件: 作業ブランチ名\n";
+const PREFERRED_BRANCH_REQUIREMENT_SECTION =
+  /^## 追加要件: 作業ブランチ名\nPR を作成する場合は、新しい作業ブランチ名として `[^`\n]+` を必ず使用してください。\n別の新規ブランチ名は作らず、この名前で作業を進めてください。\s*$/u;
+
+export function stripInjectedPreferredBranchRequirement(prompt: string): string {
+  const markerIndex = prompt.indexOf(PREFERRED_BRANCH_REQUIREMENT_MARKER);
+
+  if (markerIndex === -1) {
+    return prompt.trimEnd();
+  }
+
+  const section = prompt.slice(markerIndex + 2);
+  if (!PREFERRED_BRANCH_REQUIREMENT_SECTION.test(section)) {
+    return prompt.trimEnd();
+  }
+
+  return prompt.slice(0, markerIndex).trimEnd();
+}
+
 /** ConversationTurn[] をプロンプト埋め込み用のテキストに変換する */
 function formatConversationHistory(history: ConversationTurn[]): string {
   return history
     .map((turn, i) => {
+      const sanitizedPrompt = stripInjectedPreferredBranchRequirement(turn.prompt);
       const summary = turn.prUrl ? `${turn.summary}\n\nPR: ${turn.prUrl}` : turn.summary;
-      return `### ターン ${i + 1}\n**ユーザー:** ${turn.prompt}\n\n**結果:** ${summary}`;
+      return `### ターン ${i + 1}\n**ユーザー:** ${sanitizedPrompt}\n\n**結果:** ${summary}`;
     })
     .join("\n\n---\n\n");
 }

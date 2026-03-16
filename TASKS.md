@@ -182,6 +182,7 @@
 - [x] bot/discord-task.ts: submitDiscordJob で channelId による前回 COMPLETED ジョブ検索 → parentJobId 設定
 - [x] docs/session-strategy.md 作成
 - [x] docs/database-schema.md 更新
+- [x] packages/core/src/prompt-builder.ts: 会話履歴へ埋め込む過去 prompt から preferredBranchName の強制文を除去
 
 ## 着地期待値（DeliverableType）
 
