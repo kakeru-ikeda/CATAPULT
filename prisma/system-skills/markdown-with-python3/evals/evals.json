@@ -1,0 +1,25 @@
+{
+  "skill_name": "markdown-with-node",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "docs/how-to-run.md を新規作成して、見出しと3つの手順を追加して。Markdown作成時は Python3 で実行し、ワンライナーは使わないで。",
+      "expected_output": "Python3 スクリプトで docs/how-to-run.md が UTF-8 作成され、ワンライナーを使わない",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "README.md の末尾に '## Troubleshooting' セクションを追記して。Python3 で実施し、echo/cat/heredoc は使わないで。",
+      "expected_output": "Python3 経由で README.md へ追記され、シェルリダイレクトを使わない",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "evals/fixtures/long-markdown-source.md の内容を docs/long-output.md に書き出して。内容は長文で Markdown 記法（コードフェンス、表、引用、見出し）を含むので、Python3 で入力ファイル経由で処理し、ワンライナーは使わないで。",
+      "expected_output": "長文 Markdown が破損せず docs/long-output.md に保存され、Python3 かつ入力ファイル経由で実施される",
+      "files": [
+        "evals/fixtures/long-markdown-source.md"
+      ]
+    }
+  ]
+}
