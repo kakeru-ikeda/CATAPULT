@@ -2,6 +2,7 @@
 
 Slack / Discord をインターフェースとして GitHub Copilot CLI を呼び出し、自律的にコーディング作業を行う開発サーバーです。
 
+
 <div align="center">
   <img src="assets/banner-mini.svg" alt="CATAPULT Banner" />
 </div>
