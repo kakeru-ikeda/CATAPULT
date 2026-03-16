@@ -1,7 +1,9 @@
 import { useRef } from "react";
 import { Button, useNotify, useRefresh } from "react-admin";
 
-const VITE_API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
+const API_URL =
+  (import.meta.env.VITE_API_URL as string | undefined) ??
+  import.meta.env.BASE_URL.replace(/\/$/, "");
 
 interface SkillUploadButtonProps {
   /** アップロード先 API パス（例: "/api/skills/upload"） */
@@ -27,7 +29,7 @@ export const SkillUploadButton = ({ endpoint }: SkillUploadButtonProps) => {
     formData.append("file", file);
 
     try {
-      const res = await fetch(`${VITE_API_URL}${endpoint}`, {
+      const res = await fetch(`${API_URL}${endpoint}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${localStorage.getItem("token") ?? ""}` },
         body: formData,
