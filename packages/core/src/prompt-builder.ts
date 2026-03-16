@@ -1,11 +1,14 @@
+import { sanitizePromptContext } from "./summary-sanitizer.js";
 import { ConversationTurn, DeliverableType, ExecuteOptions } from "./types.js";
 
 /** ConversationTurn[] をプロンプト埋め込み用のテキストに変換する */
 function formatConversationHistory(history: ConversationTurn[]): string {
   return history
     .map((turn, i) => {
-      const summary = turn.prUrl ? `${turn.summary}\n\nPR: ${turn.prUrl}` : turn.summary;
-      return `### ターン ${i + 1}\n**ユーザー:** ${turn.prompt}\n\n**結果:** ${summary}`;
+      const prompt = sanitizePromptContext(turn.prompt, "（省略）");
+      const rawSummary = turn.prUrl ? `${turn.summary}\n\nPR: ${turn.prUrl}` : turn.summary;
+      const summary = sanitizePromptContext(rawSummary);
+      return `### ターン ${i + 1}\n**ユーザー:** ${prompt}\n\n**結果:** ${summary}`;
     })
     .join("\n\n---\n\n");
 }
@@ -72,7 +75,8 @@ export function buildPrompt(options: ExecuteOptions): string {
 あなたは非インタラクティブなCLI環境（ワンショット実行）で動作しています。ツールを使用せずにテキストのみで「次に〜します」などの発言をすると、プロセスが即座に終了しタスクが失敗します。作業を継続する場合は、必ずツールの実行を行ってください。
 すべての作業が完了したら、実施した作業の結果をそのままワークスペース直下の \`CATAPULT_SUMMARY.md\` に書き出してください。
 - 内容を要約・整形・書き直しする必要はありません。実際に行った操作の結果を記録してください。
-- このファイルの内容がそのままユーザーに送信されます。ファイルの作成をもってタスク完了とみなします。${prTitleInstruction}`;
+- このファイルの内容がそのままユーザーに送信されます。ファイルの作成をもってタスク完了とみなします。
+- ユーザー向けの最終出力には、\`<current_datetime>\` や \`<reminder>\` のようなコマンドマーカー・制御タグを含めてはいけません。CATAPULT 側でも除去されますが、生成時点でも出力しないでください。${prTitleInstruction}`;
 
   return [
     deliverableInstruction,

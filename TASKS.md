@@ -213,6 +213,7 @@
 - [x] prisma/migrations/20260314054400_add_local_agent: マイグレーション作成・適用
 - [x] packages/api/src/routes/agents.ts: エージェント用 API エンドポイント群（register/heartbeat/me/claim/events/complete/fallback）
 - [x] local-agent/worker の完了 summary は最長ではなく最後の assistant.message を採用
+- [x] CATAPULT 側で確定 summary を sanitize し、Slack/Discord/Frontend ではコマンドマーカーを非表示化
 - [x] packages/api/src/index.ts: /api/agents ルート登録
 - [x] packages/api/src/routes/users.ts: ユーザー一覧に localAgents をインクルード
 - [x] packages/bot/src/handlers/task.ts: TaskContext に executionMode/localAgentId 追加、submitJob に LOCAL モード分岐

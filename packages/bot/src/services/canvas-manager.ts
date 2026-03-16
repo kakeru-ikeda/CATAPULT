@@ -2,6 +2,8 @@ import type { Platform } from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
 import type { WebClient } from "@slack/web-api";
 
+import { sanitizeUserFacingSummary } from "../utils/summary-sanitizer.js";
+
 const prisma = new PrismaClient();
 
 // Canvas 本文の最大文字数（Slack Canvas の実績ベース上限）
@@ -66,7 +68,7 @@ export function buildCanvasMarkdown(
     md += `**リポジトリ:** \`${job.repo}\` @ \`${job.branch}\`\n`;
     md += `**完了:** ${formatJST(job.completedAt)}\n\n`;
     if (job.resultSummary) {
-      md += truncate(job.resultSummary, 500) + "\n\n";
+      md += truncate(sanitizeUserFacingSummary(job.resultSummary), 500) + "\n\n";
     }
     if (job.prUrl) {
       md += `🔀 [PR を開く](${job.prUrl})\n\n`;
@@ -82,7 +84,7 @@ export function buildCanvasMarkdown(
     md += `**リポジトリ:** \`${current.repo}\` @ \`${current.branch}\`\n`;
     md += `**完了:** ${formatJST(new Date())}\n\n`;
     if (progress.finalSummary) {
-      md += progress.finalSummary + "\n\n";
+      md += sanitizeUserFacingSummary(progress.finalSummary) + "\n\n";
     }
     if (progress.prUrl) {
       md += `🔀 [PR を開く](${progress.prUrl})\n\n`;
@@ -105,7 +107,7 @@ export function buildCanvasMarkdown(
       md += `🔧 \`${progress.lastTool}\`\n`;
     }
     if (progress.lastAssistantMessage) {
-      md += `💬 ${progress.lastAssistantMessage}\n`;
+      md += `💬 ${sanitizeUserFacingSummary(progress.lastAssistantMessage)}\n`;
     }
   }
 

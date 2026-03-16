@@ -3,6 +3,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import Redis from "ioredis";
 
 import type { CopilotEvent } from "../formatters/slack-blocks.js";
+import { sanitizeUserFacingSummary } from "../utils/summary-sanitizer.js";
 
 // send() メソッドを持つチャンネルの最小インターフェース
 interface SendableChannel {
@@ -121,7 +122,7 @@ export class DiscordJobStreamRelay {
       case "assistant.message": {
         const content = event.data?.content;
         if (typeof content === "string" && content.trim()) {
-          this.lastAssistantMessage = truncate(content, 200);
+          this.lastAssistantMessage = truncate(sanitizeUserFacingSummary(content), 200);
         }
         this.scheduleEdit();
         break;
@@ -135,7 +136,9 @@ export class DiscordJobStreamRelay {
         let statusText = "✅ **完了**";
         if (event.prUrl) statusText += `\n[PR を開く](${event.prUrl})`;
         void this.editProgressMessage(statusText).then(async () => {
-          await this.postSummaryMessage(event.summary ?? "タスクが完了しました");
+          await this.postSummaryMessage(
+            sanitizeUserFacingSummary(event.summary ?? "タスクが完了しました"),
+          );
           this.cleanup();
         });
         break;

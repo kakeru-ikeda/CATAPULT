@@ -6,6 +6,7 @@ import { Router as createRouter } from "express";
 import Redis from "ioredis";
 
 import { adminMiddleware, authMiddleware } from "../middleware/auth.js";
+import { sanitizeSummary } from "../utils/summary-sanitizer.js";
 
 import { extractCompletionFromLogs } from "./agent-completion.js";
 
@@ -328,7 +329,7 @@ router.post("/jobs/:jobId/complete", async (req: Request, res: Response) => {
   }
 
   // extractCompletionFromLogs ではなく、ローカルエージェントから送られた summary を優先使用
-  let finalSummary = summary;
+  let finalSummary = summary ? sanitizeSummary(summary) : summary;
   let finalPrUrl = prUrl;
   let finalWorkerBranch: string | undefined;
 

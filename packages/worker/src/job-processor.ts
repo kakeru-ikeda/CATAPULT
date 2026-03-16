@@ -2,7 +2,12 @@ import { readFile } from "fs/promises";
 import path from "path";
 
 import type { CopilotEvent } from "@catapult/core";
-import { extractFinalAssistantMessage, extractPrUrl, extractWorkerBranch } from "@catapult/core";
+import {
+  extractFinalAssistantMessage,
+  extractPrUrl,
+  extractWorkerBranch,
+  sanitizeSummary,
+} from "@catapult/core";
 import { PrismaClient } from "@prisma/client";
 import { Worker, type Job } from "bullmq";
 import { Redis } from "ioredis";
@@ -247,12 +252,14 @@ export function createWorker(): Worker<JobData> {
         try {
           const workDir = `/tmp/copilot-jobs/${jobId}/workspace`;
           const summaryFilePath = path.join(workDir, "CATAPULT_SUMMARY.md");
-          summary = await readFile(summaryFilePath, "utf-8");
+          summary = sanitizeSummary(await readFile(summaryFilePath, "utf-8"));
         } catch {
           const fallbackMessage = extractFinalAssistantMessage(events);
-          summary = fallbackMessage
-            ? `⚠️ **サマリーファイルが生成されずにプロセスが終了しました**\n\n【最後のアシスタント発言】\n${fallbackMessage}`
-            : "タスクが完了しました（報告内容の生成なし）";
+          summary = sanitizeSummary(
+            fallbackMessage
+              ? `⚠️ **サマリーファイルが生成されずにプロセスが終了しました**\n\n【最後のアシスタント発言】\n${fallbackMessage}`
+              : "タスクが完了しました（報告内容の生成なし）",
+          );
         }
 
         // CATAPULT 側で PR を作成（deliverableType=PR かつブランチが確定している場合）

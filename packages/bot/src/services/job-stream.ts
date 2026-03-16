@@ -4,6 +4,7 @@ import type { KnownBlock } from "@slack/types";
 import Redis from "ioredis";
 
 import type { CopilotEvent } from "../formatters/slack-blocks.js";
+import { sanitizeUserFacingSummary } from "../utils/summary-sanitizer.js";
 
 import {
   buildCanvasMarkdown,
@@ -167,7 +168,7 @@ export class JobStreamRelay {
       case "assistant.message": {
         const content = event.data?.content;
         if (typeof content === "string" && content.trim()) {
-          this.lastAssistantMessage = truncate(content, 200);
+          this.lastAssistantMessage = truncate(sanitizeUserFacingSummary(content), 200);
         }
         this.scheduleUpdate();
         break;
@@ -178,7 +179,7 @@ export class JobStreamRelay {
           clearTimeout(this.canvasUpdateTimer);
           this.canvasUpdateTimer = null;
         }
-        const summary = event.summary ?? "タスクが完了しました";
+        const summary = sanitizeUserFacingSummary(event.summary ?? "タスクが完了しました");
         const prUrl = event.prUrl ?? null;
         if (this.canvasMode) {
           void this.doCanvasUpdate({

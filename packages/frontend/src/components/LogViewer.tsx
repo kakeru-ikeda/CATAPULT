@@ -2,6 +2,8 @@ import { LinearProgress } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useRecordContext } from "react-admin";
 
+import { sanitizeUserFacingSummary } from "../utils/summary-sanitizer";
+
 interface LogEntry {
   id: string;
   eventType: string;
@@ -29,8 +31,12 @@ function formatLogEntry(log: LogEntry): string {
       return `📝 ${(raw?.["path"] as string | undefined) ?? ""}`;
     case "error":
       return `❌ ${(raw?.["message"] as string | undefined) ?? log.content}`;
+    case "assistant.message": {
+      const content = (raw?.["data"] as { content?: string } | undefined)?.content ?? log.content;
+      return `💬 ${sanitizeUserFacingSummary(content)}`;
+    }
     case "done":
-      return `✅ ${(raw?.["summary"] as string | undefined) ?? "完了"}`;
+      return `✅ ${sanitizeUserFacingSummary((raw?.["summary"] as string | undefined) ?? "完了")}`;
     default:
       return log.content;
   }

@@ -1,6 +1,8 @@
 import { exec } from "child_process";
 import { promisify } from "util";
 
+import { sanitizeSummary } from "@catapult/core";
+
 import type { AgentConfig } from "./config.js";
 import { EventReporter } from "./event-reporter.js";
 import { LocalCopilotExecutor } from "./executor.js";
@@ -143,7 +145,7 @@ async function runJob(config: AgentConfig, jobId: string): Promise<void> {
       const fs = await import("fs/promises");
       const path = await import("path");
       const summaryPath = path.join(workDir, "CATAPULT_SUMMARY.md");
-      summary = await fs.readFile(summaryPath, "utf-8");
+      summary = sanitizeSummary(await fs.readFile(summaryPath, "utf-8"));
 
       // Cleanup
       await fs.rm(summaryPath, { force: true });

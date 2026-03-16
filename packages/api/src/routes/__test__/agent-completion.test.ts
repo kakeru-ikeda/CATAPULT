@@ -57,4 +57,23 @@ describe("extractCompletionFromLogs", () => {
       summary: "タスクが完了しました",
     });
   });
+
+  it("assistant.message 内のコマンドマーカーを除去する", () => {
+    const result = extractCompletionFromLogs([
+      {
+        eventType: "assistant.message",
+        content: JSON.stringify({
+          data: {
+            content:
+              "変更を反映しました\n<current_datetime>2026-03-16T10:25:44.321Z</current_datetime>\n<reminder>hidden</reminder>",
+          },
+        }),
+      },
+    ]);
+
+    expect(result).toEqual({
+      prUrl: undefined,
+      summary: "変更を反映しました",
+    });
+  });
 });

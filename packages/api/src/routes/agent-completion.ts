@@ -1,3 +1,5 @@
+import { sanitizeSummary } from "../utils/summary-sanitizer.js";
+
 const PR_URL_PATTERN = /https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+/;
 const WORKER_BRANCH_PATTERN = /copilot\/job-[a-z0-9]{8}\/[\w./-]+/;
 
@@ -51,6 +53,6 @@ export function extractCompletionFromLogs(logs: JobLogRecord[]): {
   return {
     prUrl,
     workerBranch,
-    summary: assistantContents.at(-1) ?? "タスクが完了しました",
+    summary: sanitizeSummary(assistantContents.at(-1) ?? "タスクが完了しました"),
   };
 }
