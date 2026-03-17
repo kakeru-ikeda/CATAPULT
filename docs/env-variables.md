@@ -16,11 +16,12 @@ CATAPULT の動作に必要な環境変数の一覧です。`.env.example` を�
 
 ## Slack Bot 用（Slack を使用する場合は必須）
 
-| 変数名                 | 説明                                               | 例                 |
-| ---------------------- | -------------------------------------------------- | ------------------ |
-| `SLACK_BOT_TOKEN`      | Slack Bot Token (`xoxb-` で始まる)                 | `xoxb-xxxxx-xxxxx` |
-| `SLACK_SIGNING_SECRET` | Slack Signing Secret                               | `xxxxxxxxxxxxxxxx` |
-| `SLACK_APP_TOKEN`      | Slack App Token (`xapp-` で始まる、Socket Mode 用) | `xapp-xxxxx-xxxxx` |
+| 変数名                   | 説明                                               | 例                 |
+| ------------------------ | -------------------------------------------------- | ------------------ |
+| `SLACK_BOT_TOKEN`        | Slack Bot Token (`xoxb-` で始まる)                 | `xoxb-xxxxx-xxxxx` |
+| `SLACK_SIGNING_SECRET`   | Slack Signing Secret                               | `xxxxxxxxxxxxxxxx` |
+| `SLACK_APP_TOKEN`        | Slack App Token (`xapp-` で始まる、Socket Mode 用) | `xapp-xxxxx-xxxxx` |
+| `SLACK_CANVAS_DISABLED`  | `true` にすると Canvas を無効化してメッセージモードで動作する（Canvas API が使えない環境向け） | `true` |
 
 ## Discord Bot 用（Discord を使用する場合は必須）
 

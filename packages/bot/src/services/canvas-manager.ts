@@ -121,7 +121,8 @@ export function buildCanvasMarkdown(
 let cachedWorkspaceUrl: string | null = null;
 
 // 無料プランなど Canvas 非対応ワークスペースの場合に true にするフラグ
-let canvasUnavailable = false;
+// SLACK_CANVAS_DISABLED=true で起動時から Canvas をバイパスできる
+let canvasUnavailable = process.env.SLACK_CANVAS_DISABLED === "true";
 
 /**
  * auth.test からワークスペース URL を取得し、Canvas の URL を組み立てる。

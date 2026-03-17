@@ -4,6 +4,7 @@ import type { KnownBlock } from "@slack/types";
 import Redis from "ioredis";
 
 import type { CopilotEvent } from "../formatters/slack-blocks.js";
+import { markdownToMrkdwn } from "../formatters/markdown-to-mrkdwn.js";
 
 import {
   buildCanvasMarkdown,
@@ -353,7 +354,8 @@ export class JobStreamRelay {
 
   /** サマリーメッセージを投稿する（メッセージモード専用） */
   private async postSummaryMessage(summary: string): Promise<void> {
-    const chunks = splitIntoChunks(summary, SLACK_BLOCK_MAX);
+    const mrkdwn = markdownToMrkdwn(summary);
+    const chunks = splitIntoChunks(mrkdwn, SLACK_BLOCK_MAX);
     for (const chunk of chunks) {
       try {
         await this.slack.client.chat.postMessage({

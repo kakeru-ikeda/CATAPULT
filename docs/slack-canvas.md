@@ -221,9 +221,25 @@ const canvasUrl = `${workspaceUrl}docs/${canvasId}`;
 
 ---
 
+## Canvas の無効化（バイパス）
+
+Canvas API が利用できない場合（権限未付与、無料プランなど）は環境変数で無効化できます。
+
+```env
+SLACK_CANVAS_DISABLED=true
+```
+
+設定すると起動時から Canvas を完全スキップし、従来のメッセージモードで動作します。
+
+> **補足**: `canvases.access.set` でチャンネル共有権限を付与する実装が済んでいますが、
+> Slack App の OAuth スコープに `canvases:write` が追加されていない場合は `SLACK_CANVAS_DISABLED=true` で回避してください。
+
+---
+
 ## 注意事項
 
 - **Canvas はインタラクティブ要素未サポート**: ボタン（停止・確認）は引き続きメッセージで送信
 - **Canvas の文字数制限**: 実装では 15,000 文字上限でトランケート（Slack Canvas の実際の上限は非公開だが実績ベース）
 - **Canvas 作成タイミング**: `submitJob()` 時に作成（ユーザーがジョブを確認・送信したタイミング）
+- **Canvas アクセス権**: 作成直後に `canvases.access.set` でチャンネルへの読み取り共有を付与する（付与しないとリンクを開けない）
 - **前ジョブ履歴**: 同一スレッドの直近 3 件まで Canvas に掲載
