@@ -33,6 +33,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git curl openssl ca-certificates python3 \
     && rm -rf /var/lib/apt/lists/*
 
+# Git のシステムレベル設定（ジョブごとに HOME が変わるため global ではなく system に設定）
+# safe.directory '*' は /tmp 配下の一時ワークスペースで git 操作するために必要
+RUN git config --system user.name "Copilot Catapult" \
+    && git config --system user.email "copilot@catapult.local" \
+    && git config --system safe.directory '*' \
+    && git config --system init.defaultBranch main
+
 # GitHub Copilot CLI インストール（プラットフォームバイナリを含む）
 RUN npm install -g @github/copilot @github/copilot-linux-x64
 
