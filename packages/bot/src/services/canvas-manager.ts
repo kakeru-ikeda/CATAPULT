@@ -177,6 +177,14 @@ export async function getOrCreateThreadCanvas(
 
     const canvasId = result.canvas_id!;
 
+    // Canvas をチャンネルメンバーが閲覧できるよう共有する
+    // （作成直後はBot専有のプライベート状態のため必須）
+    await client.canvases.access.set({
+      canvas_id: canvasId,
+      access_level: "read",
+      channel_ids: [channelId],
+    });
+
     await prisma.threadCanvas.create({
       data: { platform, channelId, threadId, canvasId },
     });
