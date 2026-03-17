@@ -168,6 +168,7 @@
 ### ドキュメント
 
 - [x] README.md (セットアップガイド完成版)
+- [x] README.md 更新（現行機能の反映 + docs 導線整理）
 - [x] 環境変数一覧ドキュメント (docs/env-variables.md)
 - [x] API リファレンス (docs/api-reference.md)
 
