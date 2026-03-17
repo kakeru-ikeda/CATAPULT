@@ -156,7 +156,13 @@ async function submitDiscordJob(
         autoArchiveDuration: 60,
       });
       outputChannel = thread as unknown as SendableChannel;
-      // 進捗スレッドは出力用のみ。threadId（セッション識別子）は message.channelId のまま維持する
+      // 進捗スレッドのIDでジョブの threadId を更新する。
+      // これにより、ユーザーが進捗スレッド内で再メンションした際に
+      // getSessionId() が返す channelId と一致し、セッション継続が機能する。
+      await prisma.job.update({
+        where: { id: job.id },
+        data: { threadId: thread.id },
+      });
     }
   } catch {
     // スレッド作成不可（入れ子スレッドなど）の場合はチャンネルにフォールバック（threadId は変更不要）
