@@ -3,8 +3,8 @@ import type { App } from "@slack/bolt";
 import type { KnownBlock } from "@slack/types";
 import Redis from "ioredis";
 
-import type { CopilotEvent } from "../formatters/slack-blocks.js";
 import { markdownToMrkdwn } from "../formatters/markdown-to-mrkdwn.js";
+import type { CopilotEvent } from "../formatters/slack-blocks.js";
 
 import {
   buildCanvasMarkdown,
