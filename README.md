@@ -2,6 +2,7 @@
 
 Slack / Discord から GitHub Copilot CLI を呼び出し、調査・実装・レビュー・PR 作成までを自律実行する開発サーバーです。
 
+
 <div align="center">
   <img src="assets/banner-mini.svg" alt="CATAPULT Banner" />
 </div>
@@ -219,3 +220,4 @@ README から迷子になりにくいように、用途別に docs を整理し�
 ## ライセンス
 
 MIT
+hoge
