@@ -73,6 +73,7 @@ services:
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
       SLACK_APP_TOKEN: ${SLACK_APP_TOKEN:-}
       SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
+      SLACK_CANVAS_DISABLED: ${SLACK_CANVAS_DISABLED:-}
     depends_on:
       postgres:
         condition: service_healthy
