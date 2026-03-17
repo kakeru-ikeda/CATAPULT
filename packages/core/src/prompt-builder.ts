@@ -76,7 +76,7 @@ export function buildPrompt(options: ExecuteOptions): string {
 
   const previousContextSection =
     options.conversationHistory && options.conversationHistory.length > 0
-      ? `## このスレッドのこれまでの会話履歴\n以下は同じスレッドで行われた過去のやり取りです。前後の文脈を踏まえて今回のタスクに答えてください。\n\n${formatConversationHistory(options.conversationHistory)}`
+      ? `## このスレッドのこれまでの会話履歴\n以下は同じスレッドで行われた過去のやり取りです。\n\n今回のユーザーの指示を最優先で実行してください。過去に実行した作業を繰り返さないでください。\n\n${formatConversationHistory(options.conversationHistory)}`
       : "";
 
   const deliverableInstruction =

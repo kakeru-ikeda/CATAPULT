@@ -40,13 +40,14 @@ const REPO_PATTERN = /([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)/;
 
 /**
  * セッション識別子として使う Discord チャンネルIDを返す。
- * ボットが作成する進捗スレッド内からのメンションを考慮し、
- * スレッドの場合は親チャンネルIDを使用する。
+ * ボットが作成する進捗スレッド内からのメンションの場合、
+ * スレッド自体の channelId をそのまま使用することで
+ * 同一スレッド内のジョブだけを同一セッションとして紐付ける。
  */
 function getSessionId(message: Message): string {
   if (message.channel.isThread()) {
-    // スレッド内メンション: 親チャンネルIDで統一してセッションを継続
-    return message.channel.parentId ?? message.channelId;
+    // スレッド内メンション: スレッド自体の channelId で識別（スレッド単位で一意）
+    return message.channelId;
   }
   // 親チャンネルからのメンション: メッセージIDを使い毎回独立セッションとして扱う（履歴引き継ぎなし）
   return message.id;

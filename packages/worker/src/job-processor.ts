@@ -186,6 +186,7 @@ export function createWorker(): Worker<JobData> {
             where: {
               userId: dbJob.userId,
               threadId: dbJob.threadId,
+              repository: dbJob.repository,
               status: "COMPLETED",
               id: { not: dbJob.id },
             },

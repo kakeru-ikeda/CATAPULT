@@ -9,8 +9,9 @@ CATAPULT に「軽量セッション」戦略を導入し、Slack / Discord の�
 ## 要件
 
 - Slack / Discord の同じスレッドで追加メンションしたとき、「前回ジョブの成果や要約」が新しいジョブのプロンプトに自動先頭挿入される。
-- スレッド内の前回ジョブは `threadId`（Slack: `thread_ts`、Discord: ボットが作成したスレッドの channel ID）で紐付ける。
-- セッション（文脈）は **1世代（直前のみ）** とする。多段連結や履歴全注入は行わない。
+- スレッド内のジョブは `threadId`（Slack: `thread_ts`、Discord: スレッド自体の channelId）+ `repository` で紐付ける。
+- セッション（文脈）は同一スレッド内の **最大10ターン** を時系列で注入する。
+- 履歴検索は `threadId` + `userId` + `repository` で絞り込み、異なるリポジトリの履歴が混入しないようにする。
 - 破壊的変更なし（DBスキーマ最小差分）。
 
 ---
@@ -53,15 +54,15 @@ model Job {
 `packages/worker/src/executor.ts` の `buildPrompt()` にて：
 
 ```typescript
-const previousContextSection = options.previousContext
-  ? `## 前回の作業サマリー\n${options.previousContext}`
-  : "";
-const prompt = [branchInstruction, instructions ?? "", previousContextSection, userPrompt]
-  .filter(Boolean)
-  .join("\n\n");
+const previousContextSection =
+  options.conversationHistory && options.conversationHistory.length > 0
+    ? `## このスレッドのこれまでの会話履歴\n...履歴指示...\n\n${formatConversationHistory(options.conversationHistory)}`
+    : "";
 ```
 
-`previousContext` には `resultSummary`（＋PR URL があれば付記）が格納されます。
+`conversationHistory` は `threadId` + `userId` + `repository` で絞り込んだ最大10件の過去ジョブから構築される。各ターンには `prompt`（ユーザー指示）、`resultSummary`（結果要約）、`prUrl`（PR URL）が含まれる。
+
+プロンプト内では「今回の指示を最優先。履歴は文脈理解のための参考情報。過去の作業を繰り返さない」と明記し、LLM が過去の指示と今回の指示を混同しないようにする。
 
 ---
 
@@ -76,8 +77,10 @@ const prompt = [branchInstruction, instructions ?? "", previousContextSection, u
 
 ### Discord
 
-- Bot はジョブ毎に `startThread()` でスレッドを作成し、`threadId = thread.id` として保存
-- 次回メンション時に `message.channelId = thread.id` が一致 → セッション継続と判定
+- Bot はジョブ毎に `startThread()` で進捗スレッドを作成する
+- ユーザーが進捗スレッド内で再メンションした場合、`message.channelId`（スレッド自体の ID）をセッション識別子として使用する
+- 親チャンネル ID ではなくスレッド固有の channelId を使うことで、チャンネル全体のジョブが混入しない
+- 親チャンネルからの新規メンション → `message.id` で毎回独立セッション
 
 ---
 
