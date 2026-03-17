@@ -7,7 +7,6 @@ COPY packages/api/package*.json ./packages/api/
 COPY packages/core/package*.json ./packages/core/
 COPY tsconfig.base.json ./
 COPY prisma ./prisma
-COPY .github/skills ./.github/skills
 
 RUN npm pkg delete scripts.prepare && npm ci --workspace=packages/api --workspace=packages/core --include-workspace-root
 
@@ -36,7 +35,6 @@ COPY package*.json ./
 COPY packages/api/package*.json ./packages/api/
 COPY packages/core/package*.json ./packages/core/
 COPY prisma ./prisma
-COPY .github/skills ./.github/skills
 
 RUN npm pkg delete scripts.prepare && npm ci --workspace=packages/api --omit=dev
 
