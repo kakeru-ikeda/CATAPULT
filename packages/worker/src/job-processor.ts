@@ -295,7 +295,10 @@ export function createWorker(): Worker<JobData> {
             status: "COMPLETED",
             completedAt: new Date(),
             prUrl,
-            workerBranch: workerBranch ?? null,
+            workerBranch:
+              dbJob.deliverableType === "PR" || dbJob.deliverableType === "COMMIT_ONLY"
+                ? (workerBranch ?? null)
+                : null,
             resultSummary: summary,
           },
         });

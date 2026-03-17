@@ -20,9 +20,9 @@ type User = {
 };
 
 const example: User = {
-  id: 'u-1',
-  name: 'alice',
-  roles: ['admin', 'reviewer'],
+  id: "u-1",
+  name: "alice",
+  roles: ["admin", "reviewer"],
 };
 
 console.info(example);
@@ -30,11 +30,11 @@ console.info(example);
 
 ## テーブル
 
-| Key | Value | Notes |
-| --- | --- | --- |
-| retries | 3 | max retry count |
-| timeout_ms | 120000 | request timeout |
-| mode | safe-write | avoid one-liner |
+| Key        | Value      | Notes           |
+| ---------- | ---------- | --------------- |
+| retries    | 3          | max retry count |
+| timeout_ms | 120000     | request timeout |
+| mode       | safe-write | avoid one-liner |
 
 ## 箇条書き
 

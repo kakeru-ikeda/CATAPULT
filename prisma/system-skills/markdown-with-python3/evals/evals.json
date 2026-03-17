@@ -17,9 +17,7 @@
       "id": 3,
       "prompt": "evals/fixtures/long-markdown-source.md の内容を docs/long-output.md に書き出して。内容は長文で Markdown 記法（コードフェンス、表、引用、見出し）を含むので、Python3 で入力ファイル経由で処理し、ワンライナーは使わないで。",
       "expected_output": "長文 Markdown が破損せず docs/long-output.md に保存され、Python3 かつ入力ファイル経由で実施される",
-      "files": [
-        "evals/fixtures/long-markdown-source.md"
-      ]
+      "files": ["evals/fixtures/long-markdown-source.md"]
     }
   ]
 }

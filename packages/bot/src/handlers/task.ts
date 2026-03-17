@@ -271,10 +271,20 @@ export async function handleTask(
     const sessionJob = await prisma.job.findFirst({
       where: { userId: user.id, threadId: threadTs, status: "COMPLETED" },
       orderBy: { completedAt: "desc" },
-      select: { repository: true, branch: true, workerBranch: true, prUrl: true },
+      select: {
+        repository: true,
+        branch: true,
+        workerBranch: true,
+        prUrl: true,
+        deliverableType: true,
+      },
     });
     if (sessionJob) {
-      const continueBranch = sessionJob.workerBranch ?? sessionJob.branch;
+      const continueBranch =
+        (sessionJob.deliverableType === "PR" || sessionJob.deliverableType === "COMMIT_ONLY") &&
+        sessionJob.workerBranch
+          ? sessionJob.workerBranch
+          : sessionJob.branch;
       const sessionCtx =
         sessionJob.prUrl && sessionJob.workerBranch
           ? { prUrl: sessionJob.prUrl, workerBranch: sessionJob.workerBranch }

@@ -59,11 +59,15 @@ async function seedSystemSkill(zipFileName: string): Promise<void> {
   const content = await skillMdFile.async("string");
   const parsed = parseSkillMd(content);
   if (!parsed) {
-    console.warn(`[seed] ${zipFileName}: SKILL.md に name または description がありません。スキップします`);
+    console.warn(
+      `[seed] ${zipFileName}: SKILL.md に name または description がありません。スキップします`,
+    );
     return;
   }
   if (!VALID_SKILL_NAME.test(parsed.name)) {
-    console.warn(`[seed] ${zipFileName}: SKILL.md の name "${parsed.name}" が不正です。スキップします`);
+    console.warn(
+      `[seed] ${zipFileName}: SKILL.md の name "${parsed.name}" が不正です。スキップします`,
+    );
     return;
   }
 

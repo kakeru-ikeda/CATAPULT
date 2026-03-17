@@ -1,6 +1,6 @@
 ---
 name: markdown-with-python3
-description: Enforce Python3-based Markdown file creation and updates. Use this skill whenever the user asks to create or edit .md files, documentation, README, notes, or any Markdown output, even if they do not explicitly mention Python.
+description: Enforce Python3-based Markdown file creation and updates. Use this skill whenever creating or editing any .md file — including CATAPULT_SUMMARY.md, documentation, README, notes, reports, or any Markdown output — even if Python is not explicitly mentioned and even if the file is a system-generated output rather than a user request.
 ---
 
 # Markdown with Python3
@@ -46,6 +46,7 @@ bash の command 引数・`python3 -c`・heredoc に長い文字列を直書き�
 **CLI のクォート癖と実行ラッパーの制御マーカーがコンテンツ中の記号と衝突し、出力が途中で切断・破損する**。
 
 具体的な症状:
+
 - コードフェンス（` ``` `）や引用（`>`）、特殊記号が含まれる行で出力が途切れる
 - 実行ラッパーの制御マーカー文字列が本文に埋め込まれる
 - `$`, `` ` ``, `\`, `!` などのシェル特殊文字がコンテンツを壊す
@@ -60,7 +61,7 @@ bash の command 引数・`python3 -c`・heredoc に長い文字列を直書き�
 > **コンテンツに記号・コードフェンス・引用符が 1 つでも含まれる場合は必ずこのパターンを使う。**
 > `create_file` ツールで `/tmp/gen_*.py` を先に作り、`python3` で実行する。
 
-```python
+````python
 # /tmp/gen_report.py
 lines = []
 lines.append("# レポートタイトル\n")
@@ -72,7 +73,7 @@ lines.append("\n```\n")
 
 with open("/tmp/content.md.txt", "w", encoding="utf-8") as f:
     f.writelines(lines)
-```
+````
 
 ```bash
 # 生成 → 書き込みの 2 ステップ
@@ -196,10 +197,10 @@ python3 .github/skills/markdown-with-python3/scripts/append-markdown.py docs/exa
 
 - `evals/evals.json` に 3 つの評価プロンプトを定義済み
 - 目的:
-	- `.md` 作成/更新で Python3 経由を一貫して選択できること
-	- 長文かつ Markdown 記法を含む内容でも破損しないこと
-	- 長文時にチャンク分割を選択できること
-	- コンテンツ生成フェーズも Python で行い、シェルクォートミスを起こさないこと
+  - `.md` 作成/更新で Python3 経由を一貫して選択できること
+  - 長文かつ Markdown 記法を含む内容でも破損しないこと
+  - 長文時にチャンク分割を選択できること
+  - コンテンツ生成フェーズも Python で行い、シェルクォートミスを起こさないこと
 
 ## 出力方針
 
