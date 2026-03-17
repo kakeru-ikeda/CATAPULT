@@ -56,8 +56,14 @@ export function markdownToMrkdwn(text: string): string {
   result = result.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, "<$2|$1>");
 
   // --- コードブロック・インラインコードを復元 ---
-  result = result.replace(/\uE000CB(\d+)\uE000/g, (_: string, i: string) => codeBlocks[Number(i)] ?? "");
-  result = result.replace(/\uE000IC(\d+)\uE000/g, (_: string, i: string) => inlineCodes[Number(i)] ?? "");
+  result = result.replace(
+    /\uE000CB(\d+)\uE000/g,
+    (_: string, i: string) => codeBlocks[Number(i)] ?? "",
+  );
+  result = result.replace(
+    /\uE000IC(\d+)\uE000/g,
+    (_: string, i: string) => inlineCodes[Number(i)] ?? "",
+  );
 
   return result;
 }

@@ -196,11 +196,9 @@ export class JobStreamRelay {
             .then(() => this.updateControlMessage("done", prUrl))
             .then(() => this.cleanup());
         } else {
-          const fullSummary = prUrl
-            ? `${summary}\n\n🔀 *作成された PR:* <${prUrl}|PR を開く>`
-            : summary;
-          void this.updateProgressMessage("✅ *完了*")
-            .then(() => this.postSummaryMessage(fullSummary))
+          const doneText = prUrl ? `✅ *完了* | 🔀 <${prUrl}|PR を開く>` : "✅ *完了*";
+          void this.updateProgressMessage(doneText)
+            .then(() => this.postSummaryMessage(summary))
             .then(() => this.cleanup());
         }
         break;
@@ -352,20 +350,55 @@ export class JobStreamRelay {
     }
   }
 
-  /** サマリーメッセージを投稿する（メッセージモード専用） */
+  /**
+   * サマリーをファイルスニペットとして追加共有する。
+   * 通常メッセージと併用し、全文を折りたたみなしで閲覧できるようにする。
+   */
+  private async uploadSummaryAsFile(markdown: string): Promise<void> {
+    const buf = Buffer.from(markdown, "utf-8");
+    const urlRes = await this.slack.client.files.getUploadURLExternal({
+      filename: "result.md",
+      length: buf.byteLength,
+    });
+    if (!urlRes.ok || !urlRes.upload_url || !urlRes.file_id) {
+      throw new Error("getUploadURLExternal failed");
+    }
+    const upRes = await fetch(urlRes.upload_url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+      body: buf,
+    });
+    if (!upRes.ok) throw new Error(`file upload HTTP ${upRes.status}`);
+    await this.slack.client.files.completeUploadExternal({
+      files: [{ id: urlRes.file_id, title: "実行結果" }],
+      channel_id: this.channelId,
+      thread_ts: this.threadTs,
+    });
+  }
+
+  /** サマリーメッセージをファイルスニペットとして投稿する（メッセージモード専用） */
   private async postSummaryMessage(summary: string): Promise<void> {
-    const mrkdwn = markdownToMrkdwn(summary);
-    const chunks = splitIntoChunks(mrkdwn, SLACK_BLOCK_MAX);
-    for (const chunk of chunks) {
-      try {
-        await this.slack.client.chat.postMessage({
-          channel: this.channelId,
-          thread_ts: this.threadTs,
-          text: chunk,
-          blocks: [{ type: "section", text: { type: "mrkdwn", text: chunk } }],
-        });
-      } catch (err) {
-        console.error(`JobStreamRelay: failed to post summary chunk for job ${this.jobId}:`, err);
+    try {
+      await this.uploadSummaryAsFile(summary);
+    } catch (err) {
+      // ファイルアップロード失敗時は分割テキストにフォールバック
+      console.error(`JobStreamRelay: file upload failed for job ${this.jobId}, falling back:`, err);
+      const mrkdwn = markdownToMrkdwn(summary);
+      const chunks = splitIntoChunks(mrkdwn, SLACK_BLOCK_MAX);
+      for (const chunk of chunks) {
+        try {
+          await this.slack.client.chat.postMessage({
+            channel: this.channelId,
+            thread_ts: this.threadTs,
+            text: chunk,
+            blocks: [{ type: "section", text: { type: "mrkdwn", text: chunk } }],
+          });
+        } catch (postErr) {
+          console.error(
+            `JobStreamRelay: failed to post summary chunk for job ${this.jobId}:`,
+            postErr,
+          );
+        }
       }
     }
   }
