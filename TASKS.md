@@ -267,3 +267,54 @@
 - [x] `packages/bot/src/handlers/task.ts`: `TaskContext` / `submitJob` に `model` 追加
 - [x] `packages/bot/src/handlers/interactive.ts`: Slack モーダルにモデルドロップダウン追加
 - [x] `packages/bot/src/handlers/discord-task.ts`: Discord UI にモデルセレクトメニュー追加
+
+## セッション再設計: CLI Resume ベースの対話型実行
+
+[設計書: docs/redesign-session-resume.md](./docs/redesign-session-resume.md)
+
+### Phase 1: 基盤
+
+- [ ] `prisma/schema.prisma`: `SessionStatus`・`SessionMode` enum、`Session` モデル追加
+- [ ] `prisma/schema.prisma`: `Job.sessionId` フィールド追加（Session リレーション）
+- [ ] Prisma マイグレーション作成・適用
+- [ ] `packages/worker/src/session-manager.ts`: Session CRUD（作成・取得・ステータス更新・lastAccessedAt 更新）
+- [ ] `packages/worker/src/session-manager.ts`: Redis 分散ロック（`session:{id}:lock`）
+- [ ] `packages/worker/src/workspace-manager.ts`: 永続化 git clone（`/sessions/{sessionId}/workspace/`）
+- [ ] `packages/worker/src/workspace-manager.ts`: `git fetch + checkout` による差分更新
+- [ ] `docker-compose.yml`: `sessions_data` Named Volume 追加、全 Worker にマウント
+- [ ] `docs/database-schema.md`: Session モデルの記載追加
+
+### Phase 2: Executor 改修
+
+- [ ] `packages/worker/src/executor.ts`: `--autopilot` → SessionMode による条件分岐
+- [ ] `packages/worker/src/executor.ts`: INTERACTIVE 初回は `--autopilot` なし + `-p` + `--no-ask-user`
+- [ ] `packages/worker/src/executor.ts`: INTERACTIVE 継続は `--resume={cliSessionId}` + `-p`
+- [ ] `packages/worker/src/executor.ts`: `result` イベントから `sessionId` を抽出し DB に保存
+- [ ] `packages/worker/src/executor.ts`: `cwd` を `/sessions/{sessionId}/workspace/` に変更
+- [ ] `packages/worker/src/executor.ts`: `HOME` を `/sessions/{sessionId}/home/` に変更
+- [ ] `packages/worker/src/job-processor.ts`: Session ベースの実行フロー（Session 取得 or 作成 → ロック → 実行 → アンロック）
+- [ ] `packages/worker/src/job-processor.ts`: `cleanupWorkDir()` を INTERACTIVE モード時はスキップ
+- [ ] `packages/core/src/types.ts`: `ExecuteOptions` に `sessionMode`・`cliSessionId`・`volumePath` 追加
+- [ ] `packages/core/src/prompt-builder.ts`: resume モード時の `conversationHistory` 注入スキップ
+
+### Phase 3: Bot 改修
+
+- [ ] `packages/bot/src/handlers/task.ts`: Session 検索（threadId + userId + repository）→ 既存 Session 再利用
+- [ ] `packages/bot/src/handlers/task.ts`: モード選択 UI（対話モード / Autopilot ボタン）
+- [ ] `packages/bot/src/handlers/task.ts`: `submitJob` に `sessionId`・`sessionMode` 追加
+- [ ] `packages/bot/src/handlers/interactive.ts`: Slack モーダルにモード選択追加
+- [ ] `packages/bot/src/handlers/discord-task.ts`: Discord UI にモード選択追加
+- [ ] `packages/bot/src/services/job-stream.ts`: 対話モード完了時の「続けるにはこのスレッドで話しかけてください」メッセージ
+
+### Phase 4: GC・運用
+
+- [ ] `packages/worker/src/session-gc.ts`: TTL ベースの Session GC cron 実装（デフォルト 24h）
+- [ ] `packages/worker/src/session-gc.ts`: ディスク使用量監視・閾値超過時の優先破棄
+- [ ] `packages/worker/src/session-gc.ts`: Session ステータス遷移（ACTIVE → EXPIRED → DESTROYED）
+- [ ] `packages/frontend/src/pages/admin/SessionList.tsx`: Session 一覧・詳細画面
+- [ ] `packages/api/src/routes/sessions.ts`: Session 管理 API
+
+### Phase 5: local-agent 対応
+
+- [ ] `packages/local-agent/src/executor.ts`: `--autopilot` → SessionMode による条件分岐
+- [ ] `packages/local-agent/src/executor.ts`: `--resume` 対応
